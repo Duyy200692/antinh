@@ -79,10 +79,19 @@ export const DishCard: React.FC<DishCardProps> = ({
 
           {/* Sold Out Badge overlay if temporarily unavailable */}
           {!dish.isAvailableToday && (
-            <div className="absolute inset-0 bg-[#1A1A1A]/60 backdrop-blur-[1px] flex items-center justify-center">
-              <span className="px-3 py-1.5 rounded-sm bg-[#C05A3D] text-white font-sans font-bold text-xs uppercase tracking-widest shadow-lg transform -rotate-2">
-                Tạm hết món
+            <div className="absolute inset-0 bg-[#1A1A1A]/70 backdrop-blur-[1px] flex flex-col items-center justify-center p-3 text-center">
+              <span className="px-3 py-1.5 rounded-sm bg-[#C05A3D] text-white font-sans font-bold text-xs uppercase tracking-widest shadow-lg transform -rotate-1 mb-1.5">
+                Tạm hết hôm nay
               </span>
+              {dish.soldOutNote ? (
+                <span className="px-2.5 py-1 rounded-sm bg-[#1A1A1A] text-white font-sans text-[11px] font-medium shadow-sm">
+                  {dish.soldOutNote}
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-sm bg-black/60 text-[#E5E1D8] font-sans text-[10px] uppercase tracking-wider">
+                  Hết sớm trong ngày
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -131,7 +140,7 @@ export const DishCard: React.FC<DishCardProps> = ({
               ? 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
               : 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
           }`}
-          title="Bấm để chuyển trạng thái Có sẵn / Tạm hết món"
+          title="Bấm để chuyển trạng thái Có sẵn / Hết sớm trong ngày"
         >
           {dish.isAvailableToday ? (
             <>
@@ -141,7 +150,7 @@ export const DishCard: React.FC<DishCardProps> = ({
           ) : (
             <>
               <XCircle className="w-3.5 h-3.5" />
-              <span>Tạm hết</span>
+              <span>Hết sớm</span>
             </>
           )}
         </button>

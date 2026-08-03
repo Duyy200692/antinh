@@ -63,8 +63,8 @@ export default function App() {
 
   // Filtered dishes
   const filteredDishes = useMemo(() => {
-    return filterDishes(dishes, selectedDay, selectedCategory, onlyAvailable, searchQuery);
-  }, [dishes, selectedDay, selectedCategory, onlyAvailable, searchQuery]);
+    return filterDishes(dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable);
+  }, [dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable]);
 
   // Counts
   const dishesCountByDay = useMemo(() => {

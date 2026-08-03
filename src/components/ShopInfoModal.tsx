@@ -1,13 +1,21 @@
 import React from 'react';
-import { X, Phone, MapPin, Clock, ShieldCheck, HeartHandshake, Info } from 'lucide-react';
-import { SHOP_INFO } from '../data/mockDishes';
+import { X, Phone, MapPin, Clock, ShieldCheck, HeartHandshake, Info, Store } from 'lucide-react';
+import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
+import { ShopInfo } from '../types';
 
 interface ShopInfoModalProps {
   isOpen: boolean;
   onClose: () => void;
+  shopInfo?: ShopInfo;
+  onOpenAdminModal?: () => void;
 }
 
-export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ isOpen, onClose }) => {
+export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
+  isOpen,
+  onClose,
+  shopInfo = DEFAULT_SHOP_INFO,
+  onOpenAdminModal,
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -21,7 +29,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ isOpen, onClose })
             </div>
             <div>
               <h2 className="font-serif text-xl font-bold uppercase tracking-tight text-[#1A1A1A]">
-                {SHOP_INFO.name}
+                {shopInfo.name}
               </h2>
               <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-[#C05A3D] font-bold">
                 Quy Chế & Đặt Bếp Nội Bộ
@@ -53,7 +61,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ isOpen, onClose })
                 <Clock className="w-4 h-4" />
                 <span>Giờ Bếp Mở Cửa</span>
               </div>
-              <p className="text-sm font-serif font-bold text-[#1A1A1A]">{SHOP_INFO.openHours}</p>
+              <p className="text-sm font-serif font-bold text-[#1A1A1A]">{shopInfo.openHours}</p>
               <p className="text-xs text-[#1A1A1A]/60 mt-1">Phục vụ các ngày từ Thứ 2 - Chủ Nhật</p>
             </div>
 
@@ -62,8 +70,8 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ isOpen, onClose })
                 <Phone className="w-4 h-4" />
                 <span>Người Phụ Trách</span>
               </div>
-              <p className="text-sm font-serif font-bold text-[#1A1A1A]">{SHOP_INFO.contactPerson}</p>
-              <p className="text-xs text-[#1A1A1A]/80 font-mono mt-1">SĐT/Zalo: {SHOP_INFO.phone}</p>
+              <p className="text-sm font-serif font-bold text-[#1A1A1A]">{shopInfo.contactPerson}</p>
+              <p className="text-xs text-[#1A1A1A]/80 font-mono mt-1">SĐT/Zalo: {shopInfo.phone}</p>
             </div>
           </div>
 
@@ -74,7 +82,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ isOpen, onClose })
               <h3 className="text-xs font-sans uppercase tracking-wider font-bold text-[#1A1A1A] mb-1">
                 Địa Chỉ Bếp Ăn
               </h3>
-              <p className="text-sm text-[#1A1A1A]/80 font-serif">{SHOP_INFO.address}</p>
+              <p className="text-sm text-[#1A1A1A]/80 font-serif">{shopInfo.address}</p>
             </div>
           </div>
 
@@ -108,7 +116,23 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Footer */}
-        <div className="bg-[#F4F1EA] px-6 py-4 border-t border-black/10 flex justify-end">
+        <div className="bg-[#F4F1EA] px-6 py-4 border-t border-black/10 flex items-center justify-between">
+          {onOpenAdminModal ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenAdminModal();
+              }}
+              className="px-4 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] font-sans uppercase tracking-wider font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Store className="w-4 h-4 text-[#C05A3D]" />
+              <span>Chỉnh Sửa Quán</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
           <button
             onClick={onClose}
             className="px-6 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white font-sans uppercase tracking-wider font-bold text-xs transition-colors cursor-pointer"
@@ -120,3 +144,4 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ isOpen, onClose })
     </div>
   );
 };
+

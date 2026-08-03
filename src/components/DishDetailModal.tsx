@@ -158,12 +158,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               {dish.isAvailableToday ? (
                 <>
                   <XCircle className="w-4 h-4" />
-                  <span>Đổi Thành Tạm Hết</span>
+                  <span>Báo Hết Sớm Hôm Nay</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Đổi Thành Đang Có</span>
+                  <span>Báo Có Món Lại</span>
                 </>
               )}
             </button>

@@ -484,6 +484,7 @@ export const SHOP_INFO = {
   address: '121/7 (nhà sau) Lê Thị Riêng, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
   phone: '0909 310 567',
   contactPerson: 'Ms. Bình',
+  openHours: '06:30 - 20:30 (Thứ 2 - Chủ Nhật)',
   slogan: 'Chúc quý khách có một sức khoẻ tốt. Nơi cung cấp món chay làm sẵn & xôi nếp cái hoa vàng chuẩn vị.',
   features: [
     'Món chay làm sẵn từ nấm rừng Tây Bắc & sườn non lúa mạch',

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Search, PlusCircle, Calendar, Info, Sparkles } from 'lucide-react';
-import { DayOfWeek } from '../types';
+import { Search, PlusCircle, Calendar, Info, Sparkles, ShieldCheck } from 'lucide-react';
+import { DayOfWeek, ShopInfo } from '../types';
 import { getDayLabel, getTodayDayOfWeek } from '../utils/dayUtils';
-import { SHOP_INFO } from '../data/mockDishes';
+import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
 
 interface HeaderProps {
   searchQuery: string;
@@ -12,6 +12,8 @@ interface HeaderProps {
   onOpenAddModal: () => void;
   onOpenShopInfoModal: () => void;
   onOpenWeeklyOverviewModal: () => void;
+  onOpenAdminModal: () => void;
+  shopInfo?: ShopInfo;
   totalDishesCount: number;
 }
 
@@ -23,6 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddModal,
   onOpenShopInfoModal,
   onOpenWeeklyOverviewModal,
+  onOpenAdminModal,
+  shopInfo = DEFAULT_SHOP_INFO,
   totalDishesCount,
 }) => {
   const todayDay = getTodayDayOfWeek();
@@ -35,9 +39,9 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-[#1A1A1A]/80">
             <span className="inline-block w-2 h-2 rounded-full bg-[#C05A3D] animate-pulse" />
-            <span className="font-serif font-bold tracking-wide">{SHOP_INFO.name}</span>
+            <span className="font-serif font-bold tracking-wide">{shopInfo.name}</span>
             <span className="hidden sm:inline opacity-40">•</span>
-            <span className="hidden sm:inline font-sans text-[11px] uppercase tracking-wider text-[#1A1A1A]/70">LH: {SHOP_INFO.contactPerson} ({SHOP_INFO.phone})</span>
+            <span className="hidden sm:inline font-sans text-[11px] uppercase tracking-wider text-[#1A1A1A]/70">LH: {shopInfo.contactPerson} ({shopInfo.phone})</span>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -62,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl sm:text-3xl font-serif font-black uppercase tracking-tighter leading-none text-[#1A1A1A]">
-                  AN TỊNH CHAY
+                  {shopInfo.name}
                 </h1>
                 <span className="font-sans text-[10px] uppercase tracking-[0.2em] font-bold px-2 py-0.5 rounded-sm bg-[#2D463E] text-white">
                   Bếp Nội Bộ
@@ -97,7 +101,16 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Actions for Internal Menu App */}
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex flex-wrap items-center gap-2 justify-end">
+              <button
+                onClick={onOpenAdminModal}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1A1A1A] hover:bg-[#C05A3D] text-white text-xs sm:text-sm font-sans uppercase tracking-wider font-bold shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+                title="Mở Trang Quản Trị Admin (Sửa thông tin quán, Báo hết sớm...)"
+              >
+                <ShieldCheck className="w-4 h-4 text-[#E5E1D8]" />
+                <span>Quản Trị Bếp</span>
+              </button>
+
               <button
                 onClick={onOpenWeeklyOverviewModal}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] text-xs sm:text-sm font-sans uppercase tracking-wider font-bold border border-black/10 transition-colors cursor-pointer whitespace-nowrap"

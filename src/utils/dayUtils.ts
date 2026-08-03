@@ -36,7 +36,7 @@ export function filterDishes(
   dishes: DishItem[],
   selectedDay: DayOfWeek | 'today',
   selectedCategory: DishCategory | 'all_categories',
-  searchQuery: string,
+  searchQuery: string = '',
   onlyAvailable: boolean = false
 ): DishItem[] {
   const targetDay = selectedDay === 'today' ? getTodayDayOfWeek() : selectedDay;
@@ -55,7 +55,7 @@ export function filterDishes(
       selectedCategory === 'all_categories' || dish.category === selectedCategory;
 
     // Check search query (match name, description, tags, unit):
-    const query = searchQuery.trim().toLowerCase();
+    const query = (typeof searchQuery === 'string' ? searchQuery : '').trim().toLowerCase();
     const matchesSearch =
       query === '' ||
       dish.name.toLowerCase().includes(query) ||
