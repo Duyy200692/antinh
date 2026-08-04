@@ -1,7 +1,7 @@
 import React from 'react';
 import { DishItem } from '../types';
 import { getCategoryLabel, getDayLabel } from '../utils/dayUtils';
-import { X, CheckCircle2, XCircle, Clock, Tag, Edit3, PhoneCall } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Clock, Edit3, PhoneCall, ShieldCheck } from 'lucide-react';
 import { SHOP_INFO } from '../data/mockDishes';
 
 interface DishDetailModalProps {
@@ -9,6 +9,8 @@ interface DishDetailModalProps {
   onClose: () => void;
   onToggleStock: (dishId: string) => void;
   onEditDish: (dish: DishItem) => void;
+  isAdmin?: boolean;
+  onRequireAdminLogin?: () => void;
 }
 
 export const DishDetailModal: React.FC<DishDetailModalProps> = ({
@@ -16,6 +18,8 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   onClose,
   onToggleStock,
   onEditDish,
+  isAdmin = false,
+  onRequireAdminLogin,
 }) => {
   if (!dish) return null;
 
@@ -106,26 +110,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </p>
           </div>
 
-          {/* Tags */}
-          {dish.tags && dish.tags.length > 0 && (
-            <div>
-              <h4 className="text-xs font-sans font-bold uppercase tracking-[0.25em] text-[#2D463E] mb-2">
-                Đặc Điểm & Thẻ Món
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {dish.tags.map((tag, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-[#E5E1D8] text-[#1A1A1A] text-xs font-sans uppercase tracking-wider font-bold border border-black/10"
-                  >
-                    <Tag className="w-3 h-3 text-[#C05A3D]" />
-                    <span>{tag}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Ordering Callout */}
           <div className="p-4 rounded-sm bg-[#F4F1EA] border border-black/10 flex items-center justify-between gap-3">
             <div className="text-xs sm:text-sm font-sans">
@@ -144,41 +128,59 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Footer with Staff Action Buttons */}
+        {/* Modal Footer */}
         <div className="p-4 bg-[#F4F1EA] border-t border-black/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onToggleStock(dish.id)}
-              className={`px-4 py-2 rounded-sm text-xs sm:text-sm font-sans uppercase tracking-wider font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                dish.isAvailableToday
-                  ? 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
-                  : 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
-              }`}
-            >
-              {dish.isAvailableToday ? (
-                <>
-                  <XCircle className="w-4 h-4" />
-                  <span>Báo Hết Sớm Hôm Nay</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Báo Có Món Lại</span>
-                </>
-              )}
-            </button>
+          {isAdmin ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onToggleStock(dish.id)}
+                className={`px-4 py-2 rounded-sm text-xs sm:text-sm font-sans uppercase tracking-wider font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  dish.isAvailableToday
+                    ? 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
+                    : 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
+                }`}
+              >
+                {dish.isAvailableToday ? (
+                  <>
+                    <XCircle className="w-4 h-4" />
+                    <span>Báo Hết Sớm</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Báo Có Món Lại</span>
+                  </>
+                )}
+              </button>
 
-            <button
-              onClick={() => {
-                onClose();
-                onEditDish(dish);
-              }}
-              className="px-4 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] text-xs sm:text-sm font-sans uppercase tracking-wider font-bold transition-colors cursor-pointer flex items-center gap-1.5"
-            >
-              <Edit3 className="w-4 h-4 text-[#C05A3D]" />
-              <span>Sửa Món</span>
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  onEditDish(dish);
+                }}
+                className="px-4 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] text-xs sm:text-sm font-sans uppercase tracking-wider font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Edit3 className="w-4 h-4 text-[#C05A3D]" />
+                <span>Sửa Món</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs font-sans text-[#1A1A1A]/60">
+              <span className="italic">Chế độ xem khách hàng</span>
+              {onRequireAdminLogin && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onRequireAdminLogin();
+                  }}
+                  className="px-3 py-1.5 rounded-sm bg-[#1A1A1A] text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 hover:bg-[#2D463E] transition-colors cursor-pointer"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#C05A3D]" />
+                  <span>Đăng Nhập Admin</span>
+                </button>
+              )}
+            </div>
+          )}
 
           <button
             onClick={onClose}
@@ -191,3 +193,4 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
     </div>
   );
 };
+

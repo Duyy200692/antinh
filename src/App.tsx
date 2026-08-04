@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DishItem, DayOfWeek, DishCategory } from './types';
-import { INITIAL_DISHES, SHOP_INFO } from './data/mockDishes';
+import { DishItem, DayOfWeek, DishCategory, ShopInfo } from './types';
+import { INITIAL_DISHES, SHOP_INFO as DEFAULT_SHOP_INFO } from './data/mockDishes';
 import {
   filterDishes,
   getDishesCountByDay,
@@ -16,15 +16,19 @@ import { DishDetailModal } from './components/DishDetailModal';
 import { AddEditDishModal } from './components/AddEditDishModal';
 import { ShopInfoModal } from './components/ShopInfoModal';
 import { WeeklyOverviewModal } from './components/WeeklyOverviewModal';
-import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, PhoneCall } from 'lucide-react';
+import { AdminModal } from './components/AdminModal';
+import { AdminAuthModal } from './components/AdminAuthModal';
+import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers } from 'lucide-react';
 
-const STORAGE_KEY = 'tam_chay_internal_menu_dishes_v1';
+const DISHES_STORAGE_KEY = 'tam_chay_internal_menu_dishes_v2';
+const SHOP_STORAGE_KEY = 'tam_chay_shop_info_v2';
+const ADMIN_AUTH_KEY = 'tam_chay_admin_logged_in_v1';
 
 export default function App() {
   // Dishes state with local persistence
   const [dishes, setDishes] = useState<DishItem[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(DISHES_STORAGE_KEY);
       if (saved) {
         return JSON.parse(saved);
       }
@@ -34,14 +38,57 @@ export default function App() {
     return INITIAL_DISHES;
   });
 
-  // Persist dishes whenever changed
+  // Shop Info State
+  const [shopInfo, setShopInfo] = useState<ShopInfo>(() => {
+    try {
+      const saved = localStorage.getItem(SHOP_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed to load shop info', e);
+    }
+    return DEFAULT_SHOP_INFO;
+  });
+
+  // Admin Auth State
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Main navigation tab: 'today' | 'fixed' | 'all'
+  const [mainTab, setMainTab] = useState<'today' | 'fixed' | 'all'>('today');
+
+  // Persist dishes
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dishes));
+      localStorage.setItem(DISHES_STORAGE_KEY, JSON.stringify(dishes));
     } catch (e) {
       console.error('Failed to save dishes to localStorage', e);
     }
   }, [dishes]);
+
+  // Persist shop info
+  useEffect(() => {
+    try {
+      localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(shopInfo));
+    } catch (e) {
+      console.error('Failed to save shop info to localStorage', e);
+    }
+  }, [shopInfo]);
+
+  // Persist admin auth state
+  useEffect(() => {
+    try {
+      localStorage.setItem(ADMIN_AUTH_KEY, isAdminLoggedIn ? 'true' : 'false');
+    } catch (e) {
+      console.error('Failed to save admin auth state', e);
+    }
+  }, [isAdminLoggedIn]);
 
   // Filter States
   const [selectedDay, setSelectedDay] = useState<DayOfWeek | 'today'>('today');
@@ -55,16 +102,29 @@ export default function App() {
   const [editingDish, setEditingDish] = useState<DishItem | null>(null);
   const [isShopInfoModalOpen, setIsShopInfoModalOpen] = useState<boolean>(false);
   const [isWeeklyOverviewModalOpen, setIsWeeklyOverviewModalOpen] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  // Reset category filter when switching days to make browsing intuitive
+  // Day selection change handler
   const handleSelectDay = (day: DayOfWeek | 'today') => {
     setSelectedDay(day);
   };
 
-  // Filtered dishes
+  // Base Filtered dishes
   const filteredDishes = useMemo(() => {
     return filterDishes(dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable);
   }, [dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable]);
+
+  // Separate dishes into 2 clear distinct sections:
+  // 1. Món Hôm Nay (Daily Specials according to day or today)
+  // 2. Món Cố Định (Fixed menu served all week, e.g. xôi, bánh mì, hũ làm sẵn)
+  const todaySpecialDishes = useMemo(() => {
+    return filteredDishes.filter((dish) => !dish.availableDays.includes('all'));
+  }, [filteredDishes]);
+
+  const fixedWeeklyDishes = useMemo(() => {
+    return filteredDishes.filter((dish) => dish.availableDays.includes('all'));
+  }, [filteredDishes]);
 
   // Counts
   const dishesCountByDay = useMemo(() => {
@@ -75,15 +135,39 @@ export default function App() {
     return getCategoryCounts(dishes, selectedDay);
   }, [dishes, selectedDay]);
 
+  // Admin Auth handlers
+  const handleSuccessLogin = () => {
+    setIsAdminLoggedIn(true);
+    setIsAuthModalOpen(false);
+  };
+
+  const handleLogoutAdmin = () => {
+    setIsAdminLoggedIn(false);
+    setIsAdminModalOpen(false);
+  };
+
+  const handleRequireAdmin = (actionCallback: () => void) => {
+    if (isAdminLoggedIn) {
+      actionCallback();
+    } else {
+      setIsAuthModalOpen(true);
+    }
+  };
+
   // Handlers for dish CRUD & stock toggle
-  const handleToggleStock = (dishId: string, e?: React.MouseEvent) => {
+  const handleToggleStock = (dishId: string, soldOutNote?: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
     setDishes((prev) =>
       prev.map((dish) => {
         if (dish.id === dishId) {
-          const updated = { ...dish, isAvailableToday: !dish.isAvailableToday };
+          const nextState = !dish.isAvailableToday;
+          const updated = {
+            ...dish,
+            isAvailableToday: nextState,
+            soldOutNote: nextState ? undefined : (soldOutNote || dish.soldOutNote || 'Hết sớm hôm nay'),
+          };
           if (selectedDishForDetail?.id === dishId) {
             setSelectedDishForDetail(updated);
           }
@@ -92,6 +176,18 @@ export default function App() {
         return dish;
       })
     );
+  };
+
+  const handleResetAllToAvailable = () => {
+    if (confirm('Khôi phục tất cả món ăn về trạng thái CÓ SẴN cho ngày mới?')) {
+      setDishes((prev) =>
+        prev.map((d) => ({
+          ...d,
+          isAvailableToday: true,
+          soldOutNote: undefined,
+        }))
+      );
+    }
   };
 
   const handleSaveDish = (savedDish: DishItem) => {
@@ -113,23 +209,16 @@ export default function App() {
   };
 
   const handleResetToDefault = () => {
-    if (confirm('Khôi phục danh sách món ăn gốc ban đầu của quán An Tịnh?')) {
+    if (confirm('Khôi phục danh sách món ăn & thông tin quán mặc định ban đầu?')) {
       setDishes(INITIAL_DISHES);
-      localStorage.removeItem(STORAGE_KEY);
+      setShopInfo(DEFAULT_SHOP_INFO);
+      localStorage.removeItem(DISHES_STORAGE_KEY);
+      localStorage.removeItem(SHOP_STORAGE_KEY);
     }
   };
 
-  // Get current heading label for active day
-  const currentDayHeading = useMemo(() => {
-    if (selectedDay === 'today') {
-      const today = getTodayDayOfWeek();
-      return `Thực Đơn Hôm Nay (${getDayLabel(today)})`;
-    }
-    if (selectedDay === 'all') {
-      return 'Món Làm Sẵn Cố Định Phục Vụ Cả Tuần';
-    }
-    return `Thực Đơn Áp Dụng: ${getDayLabel(selectedDay)}`;
-  }, [selectedDay]);
+  // Heading label
+  const todayLabel = getDayLabel(getTodayDayOfWeek());
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#C05A3D]/20 selection:text-[#C05A3D]">
@@ -139,23 +228,32 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         selectedDay={selectedDay}
         setSelectedDay={handleSelectDay}
-        onOpenAddModal={() => {
+        onOpenAddModal={() => handleRequireAdmin(() => {
           setEditingDish(null);
           setIsAddModalOpen(true);
-        }}
+        })}
         onOpenShopInfoModal={() => setIsShopInfoModalOpen(true)}
         onOpenWeeklyOverviewModal={() => setIsWeeklyOverviewModalOpen(true)}
-        totalDishesCount={dishes.length}
+        onOpenAdminModal={() => handleRequireAdmin(() => setIsAdminModalOpen(true))}
+        shopInfo={shopInfo}
+        totalDishesCount={filteredDishes.length}
+        isAdminLoggedIn={isAdminLoggedIn}
+        onLogoutAdmin={handleLogoutAdmin}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        mainTab={mainTab}
+        setMainTab={setMainTab}
       />
 
-      {/* Editorial Day Selector */}
-      <DaySelector
-        selectedDay={selectedDay}
-        onSelectDay={handleSelectDay}
-        dishesCountByDay={dishesCountByDay}
-      />
+      {/* Day Selector (Shown when viewing today's specials or all) */}
+      {(mainTab === 'today' || mainTab === 'all') && (
+        <DaySelector
+          selectedDay={selectedDay}
+          onSelectDay={handleSelectDay}
+          dishesCountByDay={dishesCountByDay}
+        />
+      )}
 
-      {/* Editorial Category Pill Bar */}
+      {/* Category Pill Bar Filter */}
       <CategoryFilter
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
@@ -165,49 +263,110 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
-        {/* Section Title Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-4 border-b border-black/10">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-[#C05A3D]" />
-              <span className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#C05A3D] font-bold">
-                Thực Đơn Nội Bộ • Bếp Ăn {SHOP_INFO.name}
-              </span>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:py-8 space-y-12">
+        {/* SECTION 1: MÓN ĂN HÔM NAY / THEO LỊCH TUẦN */}
+        {(mainTab === 'today' || mainTab === 'all') && (
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b-2 border-[#C05A3D]">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#C05A3D] animate-pulse" />
+                  <span className="font-sans text-[11px] uppercase tracking-[0.25em] text-[#C05A3D] font-bold">
+                    Thực Đơn Luân Phiên Thay Đổi
+                  </span>
+                </div>
+                <h2 className="font-serif text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
+                  <Flame className="w-6 h-6 text-[#C05A3D]" />
+                  <span>Mục 1: Món Ăn Hôm Nay ({selectedDay === 'today' ? todayLabel : getDayLabel(selectedDay)})</span>
+                  <span className="text-sm font-sans font-bold px-2.5 py-0.5 rounded-full bg-[#C05A3D] text-white">
+                    {todaySpecialDishes.length} món
+                  </span>
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsWeeklyOverviewModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-sm bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A] font-sans text-xs uppercase tracking-wider font-bold border border-black/10 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Calendar className="w-4 h-4 text-[#C05A3D]" />
+                  <span>Xem lịch tuần</span>
+                </button>
+              </div>
             </div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-black uppercase tracking-tight text-[#1A1A1A]">
-              {currentDayHeading}
-            </h2>
-            <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">
-              Hiển thị món ăn chay, xôi gấc, xôi lá cẩm & các món bún phở theo lịch trong tuần.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsWeeklyOverviewModalOpen(true)}
-              className="px-4 py-2 rounded-sm bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A] font-sans text-xs uppercase tracking-wider font-bold border border-black/10 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Calendar className="w-4 h-4 text-[#C05A3D]" />
-              <span>Xem Toàn Bộ Lịch Tuần</span>
-            </button>
-          </div>
-        </div>
+            {todaySpecialDishes.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {todaySpecialDishes.map((dish) => (
+                  <DishCard
+                    key={dish.id}
+                    dish={dish}
+                    onSelectDish={(d) => setSelectedDishForDetail(d)}
+                    onToggleStock={(id, e) => handleToggleStock(id, undefined, e)}
+                    isAdmin={isAdminLoggedIn}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-[#F4F1EA] rounded-lg p-8 text-center border border-black/10">
+                <UtensilsCrossed className="w-8 h-8 text-[#C05A3D] mx-auto mb-2 opacity-60" />
+                <p className="font-serif text-base font-bold text-[#1A1A1A]">
+                  Không có món đặc biệt luân phiên nào cho mục này.
+                </p>
+                <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">
+                  Hãy kiểm tra bộ lọc danh mục hoặc xem danh mục Món Cố Định bên dưới.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
 
-        {/* Dishes Grid */}
-        {filteredDishes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredDishes.map((dish) => (
-              <DishCard
-                key={dish.id}
-                dish={dish}
-                onSelectDish={(d) => setSelectedDishForDetail(d)}
-                onToggleStock={handleToggleStock}
-              />
-            ))}
-          </div>
-        ) : (
-          /* Editorial Empty State */
+        {/* SECTION 2: MÓN CỐ ĐỊNH PHỤC VỤ CẢ TUẦN */}
+        {(mainTab === 'fixed' || mainTab === 'all' || mainTab === 'today') && (
+          <section className="space-y-6 pt-4">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b-2 border-[#2D463E]">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#2D463E]" />
+                  <span className="font-sans text-[11px] uppercase tracking-[0.25em] text-[#2D463E] font-bold">
+                    Món Phục Vụ Hằng Ngày • Xôi - Bánh Mì - Đồ Hũ Làm Sẵn
+                  </span>
+                </div>
+                <h2 className="font-serif text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
+                  <Layers className="w-6 h-6 text-[#2D463E]" />
+                  <span>Mục 2: Món Cố Định (Bán Tất Cả Các Ngày)</span>
+                  <span className="text-sm font-sans font-bold px-2.5 py-0.5 rounded-full bg-[#2D463E] text-white">
+                    {fixedWeeklyDishes.length} món
+                  </span>
+                </h2>
+              </div>
+            </div>
+
+            {fixedWeeklyDishes.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {fixedWeeklyDishes.map((dish) => (
+                  <DishCard
+                    key={dish.id}
+                    dish={dish}
+                    onSelectDish={(d) => setSelectedDishForDetail(d)}
+                    onToggleStock={(id, e) => handleToggleStock(id, undefined, e)}
+                    isAdmin={isAdminLoggedIn}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-[#F4F1EA] rounded-lg p-8 text-center border border-black/10">
+                <UtensilsCrossed className="w-8 h-8 text-[#2D463E] mx-auto mb-2 opacity-60" />
+                <p className="font-serif text-base font-bold text-[#1A1A1A]">
+                  Không có món cố định nào khớp với từ khoá tìm kiếm.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Global Empty State if both sections are empty */}
+        {filteredDishes.length === 0 && (
           <div className="bg-[#F4F1EA] rounded-lg border border-black/10 p-12 text-center max-w-lg mx-auto my-12">
             <div className="w-16 h-16 rounded-full bg-[#E5E1D8] flex items-center justify-center mx-auto mb-4 text-[#C05A3D]">
               <UtensilsCrossed className="w-8 h-8" />
@@ -218,7 +377,7 @@ export default function App() {
             <p className="font-sans text-xs text-[#1A1A1A]/70 mb-6 leading-relaxed">
               {searchQuery
                 ? `Không có món chay nào khớp với từ khoá "${searchQuery}".`
-                : 'Thực đơn trong danh mục hoặc ngày được chọn hiện đang trống hoặc tạm hết món.'}
+                : 'Thực đơn trong danh mục hoặc ngày được chọn hiện đang trống.'}
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -235,16 +394,18 @@ export default function App() {
                 </button>
               )}
 
-              <button
-                onClick={() => {
-                  setEditingDish(null);
-                  setIsAddModalOpen(true);
-                }}
-                className="px-5 py-2.5 rounded-sm bg-[#C05A3D] hover:bg-[#A0452C] text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Thêm món mới ngay</span>
-              </button>
+              {isAdminLoggedIn && (
+                <button
+                  onClick={() => {
+                    setEditingDish(null);
+                    setIsAddModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-sm bg-[#C05A3D] hover:bg-[#A0452C] text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Thêm món mới ngay</span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -259,48 +420,68 @@ export default function App() {
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-2xl">🪷</span>
                 <span className="font-serif font-black text-xl uppercase tracking-tighter text-[#1A1A1A]">
-                  AN TỊNH CHAY
+                  {shopInfo.name}
                 </span>
               </div>
               <p className="text-xs text-[#1A1A1A]/70 font-sans leading-relaxed max-w-xs">
-                {SHOP_INFO.name} • Hệ thống quản lý thực đơn nội bộ & xôi chay cho nhân viên. Các món chính luân phiên đảm bảo hương vị thanh tịnh, tự nhiên.
+                {shopInfo.slogan || 'Bếp ăn chay thanh tịnh nội bộ & xôi chay phục vụ hằng ngày.'}
               </p>
             </div>
 
             {/* Col 2 */}
             <div>
               <h4 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#C05A3D] mb-3">
-                Thời Gian & Đặt Món
+                Thời Gian & Liên Hệ
               </h4>
               <ul className="space-y-2 text-xs font-sans text-[#1A1A1A]/80">
                 <li>
-                  <span className="font-bold">Giờ mở cửa:</span> {SHOP_INFO.openHours}
+                  <span className="font-bold">Giờ mở cửa:</span> {shopInfo.openHours}
                 </li>
                 <li>
-                  <span className="font-bold">Phụ trách:</span> {SHOP_INFO.contactPerson} ({SHOP_INFO.phone})
+                  <span className="font-bold">Phụ trách:</span> {shopInfo.contactPerson} ({shopInfo.phone})
                 </li>
                 <li>
-                  <span className="font-bold">Địa chỉ:</span> {SHOP_INFO.address}
+                  <span className="font-bold">Địa chỉ:</span> {shopInfo.address}
                 </li>
               </ul>
             </div>
 
-            {/* Col 3: Staff Quick Tools */}
+            {/* Col 3: Staff Quick Tools & Admin Access */}
             <div>
               <h4 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#2D463E] mb-3">
-                Công Cụ Quản Trị Nội Bộ
+                Công Cụ Bếp Nội Bộ
               </h4>
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => {
-                    setEditingDish(null);
-                    setIsAddModalOpen(true);
-                  }}
-                  className="px-3.5 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span>Thêm món</span>
-                </button>
+                {isAdminLoggedIn ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingDish(null);
+                        setIsAddModalOpen(true);
+                      }}
+                      className="px-3.5 py-2 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5 text-[#C05A3D]" />
+                      <span>Thêm món</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsAdminModalOpen(true)}
+                      className="px-3.5 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#C05A3D] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#E5E1D8]" />
+                      <span>Trung Tâm Quản Trị</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="px-4 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#C05A3D] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#C05A3D]" />
+                    <span>Đăng Nhập Quản Trị Bếp</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => setIsWeeklyOverviewModalOpen(true)}
@@ -310,20 +491,22 @@ export default function App() {
                   <span>Lịch tuần</span>
                 </button>
 
-                <button
-                  onClick={handleResetToDefault}
-                  className="px-3 py-2 rounded-sm bg-white hover:bg-[#E5E1D8] text-[#1A1A1A]/70 hover:text-[#1A1A1A] text-xs font-sans uppercase tracking-wider font-semibold border border-black/10 flex items-center gap-1 transition-colors cursor-pointer"
-                  title="Khôi phục danh sách món mẫu"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Khôi phục menu gốc</span>
-                </button>
+                {isAdminLoggedIn && (
+                  <button
+                    onClick={handleResetToDefault}
+                    className="px-3 py-2 rounded-sm bg-white hover:bg-[#E5E1D8] text-[#1A1A1A]/70 hover:text-[#1A1A1A] text-xs font-sans uppercase tracking-wider font-semibold border border-black/10 flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Khôi phục danh sách món mẫu"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Khôi phục mẫu</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-[#1A1A1A]/50">
-            <p>© {new Date().getFullYear()} An Tịnh Chay • Internal Kitchen Staff Menu System.</p>
+            <p>© {new Date().getFullYear()} {shopInfo.name} • System for Kitchen Management.</p>
             <p className="font-serif italic">Thanh Tịnh • An Nhiên • Dinh Dưỡng</p>
           </div>
         </div>
@@ -339,6 +522,8 @@ export default function App() {
           setEditingDish(dish);
           setIsAddModalOpen(true);
         }}
+        isAdmin={isAdminLoggedIn}
+        onRequireAdminLogin={() => setIsAuthModalOpen(true)}
       />
 
       {/* Add / Edit Dish Modal */}
@@ -366,6 +551,37 @@ export default function App() {
         dishes={dishes}
         onSelectDay={(day) => handleSelectDay(day)}
       />
+
+      {/* Admin Center Control Panel Modal */}
+      <AdminModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        dishes={dishes}
+        onToggleStock={(id, note) => handleToggleStock(id, note)}
+        onEditDish={(dish) => {
+          setIsAdminModalOpen(false);
+          setEditingDish(dish);
+          setIsAddModalOpen(true);
+        }}
+        onAddNewDish={() => {
+          setIsAdminModalOpen(false);
+          setEditingDish(null);
+          setIsAddModalOpen(true);
+        }}
+        onDeleteDish={handleDeleteDish}
+        onResetAllToAvailable={handleResetAllToAvailable}
+        shopInfo={shopInfo}
+        onSaveShopInfo={setShopInfo}
+        onResetShopInfo={() => setShopInfo(DEFAULT_SHOP_INFO)}
+      />
+
+      {/* Admin Auth Modal */}
+      <AdminAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccessLogin={handleSuccessLogin}
+      />
     </div>
   );
 }
+

@@ -1,18 +1,20 @@
 import React from 'react';
 import { DishItem } from '../types';
 import { getCategoryLabel, getDayLabel } from '../utils/dayUtils';
-import { CheckCircle2, XCircle, Clock, Tag, Eye } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye } from 'lucide-react';
 
 interface DishCardProps {
   dish: DishItem;
   onSelectDish: (dish: DishItem) => void;
-  onToggleStock: (dishId: string, e: React.MouseEvent) => void;
+  onToggleStock?: (dishId: string, e: React.MouseEvent) => void;
+  isAdmin?: boolean;
 }
 
 export const DishCard: React.FC<DishCardProps> = ({
   dish,
   onSelectDish,
   onToggleStock,
+  isAdmin = false,
 }) => {
   const isAllWeek = dish.availableDays.includes('all');
 
@@ -51,7 +53,7 @@ export const DishCard: React.FC<DishCardProps> = ({
             loading="lazy"
           />
 
-          {/* Top-Left Category & Day Badges */}
+          {/* Top-Left Category Badge */}
           <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
             <span
               className={`font-sans text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-sm font-bold border shadow-xs ${getCategoryBadgeClass(
@@ -104,57 +106,63 @@ export const DishCard: React.FC<DishCardProps> = ({
             </h3>
           </div>
 
-          <p className="font-sans text-[#1A1A1A]/70 text-xs leading-relaxed line-clamp-2 mb-4">
+          <p className="font-sans text-[#1A1A1A]/70 text-xs leading-relaxed line-clamp-2">
             {dish.description}
           </p>
-
-          {/* Tags */}
-          <div className="flex flex-wrap items-center gap-1.5 mb-2">
-            {dish.tags.slice(0, 3).map((tag, idx) => (
-              <span
-                key={idx}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-[#F4F1EA] text-[#1A1A1A]/80 text-[10px] font-sans uppercase tracking-wider font-semibold border border-black/5"
-              >
-                <Tag className="w-2.5 h-2.5 text-[#C05A3D]" />
-                <span>{tag}</span>
-              </span>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Card Footer: Price, Unit & Staff Quick Stock Toggle */}
+      {/* Card Footer: Price, Unit & Stock Indicator / Toggle */}
       <div className="px-5 py-3.5 bg-[#F4F1EA] border-t border-black/5 flex items-center justify-between gap-2">
         <div>
           <span className="text-base font-serif font-bold text-[#C05A3D]">
             {dish.price}
           </span>
-          <span className="font-sans text-[11px] uppercase tracking-wider text-[#1A1A1A]/50 ml-1">/ {dish.unit}</span>
+          <span className="font-sans text-[11px] uppercase tracking-wider text-[#1A1A1A]/50 ml-1">
+            / {dish.unit}
+          </span>
         </div>
 
-        {/* Staff Quick Toggle Stock */}
-        <button
-          onClick={(e) => onToggleStock(dish.id, e)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[11px] font-sans uppercase tracking-wider font-bold transition-all cursor-pointer ${
-            dish.isAvailableToday
-              ? 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
-              : 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
-          }`}
-          title="Bấm để chuyển trạng thái Có sẵn / Hết sớm trong ngày"
-        >
-          {dish.isAvailableToday ? (
-            <>
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Sẵn có</span>
-            </>
-          ) : (
-            <>
-              <XCircle className="w-3.5 h-3.5" />
-              <span>Hết sớm</span>
-            </>
-          )}
-        </button>
+        {/* Status display for Customers or Quick Stock Toggle for Admin */}
+        {isAdmin && onToggleStock ? (
+          <button
+            onClick={(e) => onToggleStock(dish.id, e)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[11px] font-sans uppercase tracking-wider font-bold transition-all cursor-pointer ${
+              dish.isAvailableToday
+                ? 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
+                : 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
+            }`}
+            title="Admin: Bấm để chuyển trạng thái Có sẵn / Hết sớm"
+          >
+            {dish.isAvailableToday ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Sẵn có</span>
+              </>
+            ) : (
+              <>
+                <XCircle className="w-3.5 h-3.5" />
+                <span>Hết sớm</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <div className="flex items-center gap-1">
+            {dish.isAvailableToday ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-[#2D463E]/10 text-[#2D463E] font-sans text-[11px] font-bold uppercase tracking-wider">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Có sẵn</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-[#C05A3D]/10 text-[#C05A3D] font-sans text-[11px] font-bold uppercase tracking-wider">
+                <XCircle className="w-3.5 h-3.5" />
+                <span>Tạm hết</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
