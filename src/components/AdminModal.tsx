@@ -31,6 +31,7 @@ interface AdminModalProps {
   onAddNewDish: () => void;
   onDeleteDish: (dishId: string) => void;
   onResetAllToAvailable: () => void;
+  onSyncAllToFirestore?: () => void;
   shopInfo: ShopInfo;
   onSaveShopInfo: (info: ShopInfo) => void;
   onResetShopInfo: () => void;
@@ -45,6 +46,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   onAddNewDish,
   onDeleteDish,
   onResetAllToAvailable,
+  onSyncAllToFirestore,
   shopInfo,
   onSaveShopInfo,
   onResetShopInfo,
@@ -182,6 +184,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {onSyncAllToFirestore && (
+                  <button
+                    type="button"
+                    onClick={onSyncAllToFirestore}
+                    className="px-3.5 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    title="Đồng bộ toàn bộ danh sách món mẫu lên Firebase Cloud"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Đồng Bộ Lên Firebase</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={onResetAllToAvailable}

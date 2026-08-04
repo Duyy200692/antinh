@@ -24,6 +24,7 @@ import {
   saveDishToFirestore,
   deleteDishFromFirestore,
   seedInitialDishesToFirestore,
+  syncAllDishesToFirestore,
   subscribeToShopInfo,
   saveShopInfoToFirestore,
   testFirestoreConnection,
@@ -69,6 +70,10 @@ export default function App() {
     const unsubscribeDishes = subscribeToDishes((remoteDishes) => {
       if (remoteDishes && remoteDishes.length > 0) {
         setDishes(remoteDishes);
+        // If Firestore has only partial items (e.g. 2 items), seed the rest
+        if (remoteDishes.length < INITIAL_DISHES.length) {
+          seedInitialDishesToFirestore(INITIAL_DISHES);
+        }
       } else {
         // If Firestore is empty, seed initial dishes
         seedInitialDishesToFirestore(INITIAL_DISHES);
@@ -235,7 +240,7 @@ export default function App() {
     }
   };
 
-  const handleSaveDish = (savedDish: DishItem) => {
+  const handleSaveDish = async (savedDish: DishItem) => {
     setDishes((prev) => {
       const exists = prev.some((d) => d.id === savedDish.id);
       if (exists) {
@@ -245,7 +250,22 @@ export default function App() {
       }
     });
     // Persist to Firestore
-    saveDishToFirestore(savedDish);
+    await saveDishToFirestore(savedDish);
+  };
+
+  const handleSyncAllToFirestore = async () => {
+    // Combine INITIAL_DISHES and any newly added dishes in state
+    const dishMap = new Map<string, DishItem>();
+    INITIAL_DISHES.forEach((d) => dishMap.set(d.id, d));
+    dishes.forEach((d) => dishMap.set(d.id, d));
+    const fullList = Array.from(dishMap.values());
+
+    const success = await syncAllDishesToFirestore(fullList);
+    if (success) {
+      alert(`✅ Đã đồng bộ thành công tất cả ${fullList.length} món ăn lên Firestore Cloud (collection: tam_chay_dishes)!`);
+    } else {
+      alert('❌ Có lỗi khi đồng bộ lên Firebase Cloud. Vui lòng kiểm tra lại kết nối.');
+    }
   };
 
   const handleDeleteDish = (dishId: string) => {
@@ -622,6 +642,7 @@ export default function App() {
         }}
         onDeleteDish={handleDeleteDish}
         onResetAllToAvailable={handleResetAllToAvailable}
+        onSyncAllToFirestore={handleSyncAllToFirestore}
         shopInfo={shopInfo}
         onSaveShopInfo={handleSaveShopInfo}
         onResetShopInfo={() => handleSaveShopInfo(DEFAULT_SHOP_INFO)}

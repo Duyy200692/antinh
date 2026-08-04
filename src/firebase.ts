@@ -169,18 +169,35 @@ export async function deleteDishFromFirestore(dishId: string): Promise<boolean> 
   }
 }
 
-// Seed initial dishes into Firestore if collection is empty
+// Force sync all dishes to Firestore
+export async function syncAllDishesToFirestore(dishes: DishItem[]): Promise<boolean> {
+  try {
+    for (const dish of dishes) {
+      const cleanDish = sanitizeData(dish);
+      await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
+      await setDoc(doc(db, 'dishes', dish.id), cleanDish, { merge: true });
+    }
+    await syncToSettingsDocument(dishes);
+    console.log('✅ Đã đồng bộ tất cả', dishes.length, 'món lên Firestore tam_chay_dishes');
+    return true;
+  } catch (err) {
+    console.error('❌ Lỗi đồng bộ tất cả món lên Firestore:', err);
+    return false;
+  }
+}
+
+// Seed initial dishes into Firestore if collection is empty or incomplete
 export async function seedInitialDishesToFirestore(dishes: DishItem[]): Promise<void> {
   try {
     const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
-    if (snapshot.empty) {
+    if (snapshot.empty || snapshot.size < dishes.length) {
       for (const dish of dishes) {
         const cleanDish = sanitizeData(dish);
-        await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish);
-        await setDoc(doc(db, 'dishes', dish.id), cleanDish);
+        await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
+        await setDoc(doc(db, 'dishes', dish.id), cleanDish, { merge: true });
       }
       await syncToSettingsDocument(dishes);
-      console.log('✅ Đã nạp dữ liệu món ban đầu lên Firestore tam_chay_dishes & settings/menu_dishes_list');
+      console.log('✅ Đã nạp đầy đủ dữ liệu món lên Firestore tam_chay_dishes & settings/menu_dishes_list');
     }
   } catch (err) {
     console.error('Error seeding dishes to Firestore:', err);
