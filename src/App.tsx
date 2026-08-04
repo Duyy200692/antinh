@@ -18,6 +18,16 @@ import { ShopInfoModal } from './components/ShopInfoModal';
 import { WeeklyOverviewModal } from './components/WeeklyOverviewModal';
 import { AdminModal } from './components/AdminModal';
 import { AdminAuthModal } from './components/AdminAuthModal';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import {
+  subscribeToDishes,
+  saveDishToFirestore,
+  deleteDishFromFirestore,
+  seedInitialDishesToFirestore,
+  subscribeToShopInfo,
+  saveShopInfoToFirestore,
+  testFirestoreConnection,
+} from './firebase';
 import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers } from 'lucide-react';
 
 const DISHES_STORAGE_KEY = 'tam_chay_internal_menu_dishes_v2';
@@ -25,7 +35,7 @@ const SHOP_STORAGE_KEY = 'tam_chay_shop_info_v2';
 const ADMIN_AUTH_KEY = 'tam_chay_admin_logged_in_v1';
 
 export default function App() {
-  // Dishes state with local persistence
+  // Dishes state
   const [dishes, setDishes] = useState<DishItem[]>(() => {
     try {
       const saved = localStorage.getItem(DISHES_STORAGE_KEY);
@@ -51,6 +61,35 @@ export default function App() {
     return DEFAULT_SHOP_INFO;
   });
 
+  // Firebase connection test & real-time listeners
+  useEffect(() => {
+    testFirestoreConnection();
+
+    // Subscribe to Firestore Dishes
+    const unsubscribeDishes = subscribeToDishes((remoteDishes) => {
+      if (remoteDishes && remoteDishes.length > 0) {
+        setDishes(remoteDishes);
+      } else {
+        // If Firestore is empty, seed initial dishes
+        seedInitialDishesToFirestore(INITIAL_DISHES);
+      }
+    });
+
+    // Subscribe to Firestore Shop Info
+    const unsubscribeShop = subscribeToShopInfo((remoteShop) => {
+      if (remoteShop && remoteShop.name) {
+        setShopInfo(remoteShop);
+      } else {
+        saveShopInfoToFirestore(DEFAULT_SHOP_INFO);
+      }
+    });
+
+    return () => {
+      unsubscribeDishes();
+      unsubscribeShop();
+    };
+  }, []);
+
   // Admin Auth State
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     try {
@@ -63,7 +102,7 @@ export default function App() {
   // Main navigation tab: 'today' | 'fixed' | 'all'
   const [mainTab, setMainTab] = useState<'today' | 'fixed' | 'all'>('today');
 
-  // Persist dishes
+  // Persist dishes to localStorage fallback
   useEffect(() => {
     try {
       localStorage.setItem(DISHES_STORAGE_KEY, JSON.stringify(dishes));
@@ -72,7 +111,7 @@ export default function App() {
     }
   }, [dishes]);
 
-  // Persist shop info
+  // Persist shop info to localStorage fallback
   useEffect(() => {
     try {
       localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(shopInfo));
@@ -171,6 +210,8 @@ export default function App() {
           if (selectedDishForDetail?.id === dishId) {
             setSelectedDishForDetail(updated);
           }
+          // Save to Firestore
+          saveDishToFirestore(updated);
           return updated;
         }
         return dish;
@@ -181,11 +222,15 @@ export default function App() {
   const handleResetAllToAvailable = () => {
     if (confirm('Khôi phục tất cả món ăn về trạng thái CÓ SẴN cho ngày mới?')) {
       setDishes((prev) =>
-        prev.map((d) => ({
-          ...d,
-          isAvailableToday: true,
-          soldOutNote: undefined,
-        }))
+        prev.map((d) => {
+          const updated = {
+            ...d,
+            isAvailableToday: true,
+            soldOutNote: undefined,
+          };
+          saveDishToFirestore(updated);
+          return updated;
+        })
       );
     }
   };
@@ -199,6 +244,8 @@ export default function App() {
         return [savedDish, ...prev];
       }
     });
+    // Persist to Firestore
+    saveDishToFirestore(savedDish);
   };
 
   const handleDeleteDish = (dishId: string) => {
@@ -206,6 +253,13 @@ export default function App() {
     if (selectedDishForDetail?.id === dishId) {
       setSelectedDishForDetail(null);
     }
+    // Delete from Firestore
+    deleteDishFromFirestore(dishId);
+  };
+
+  const handleSaveShopInfo = (newShopInfo: ShopInfo) => {
+    setShopInfo(newShopInfo);
+    saveShopInfoToFirestore(newShopInfo);
   };
 
   const handleResetToDefault = () => {
@@ -214,14 +268,26 @@ export default function App() {
       setShopInfo(DEFAULT_SHOP_INFO);
       localStorage.removeItem(DISHES_STORAGE_KEY);
       localStorage.removeItem(SHOP_STORAGE_KEY);
+      // Re-seed Firestore
+      INITIAL_DISHES.forEach((d) => saveDishToFirestore(d));
+      saveShopInfoToFirestore(DEFAULT_SHOP_INFO);
     }
   };
 
   // Heading label
   const todayLabel = getDayLabel(getTodayDayOfWeek());
 
+  // Focus search bar on mobile tab tap
+  const handleFocusSearch = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const searchInput = document.getElementById('header-search-input');
+    if (searchInput) {
+      searchInput.focus();
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#FDFCFB] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#C05A3D]/20 selection:text-[#C05A3D]">
+    <div className="min-h-screen bg-[#FDFCFB] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#C05A3D]/20 selection:text-[#C05A3D] pb-16 sm:pb-0">
       {/* Editorial Header */}
       <Header
         searchQuery={searchQuery}
@@ -263,22 +329,22 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:py-8 space-y-12">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-8 sm:space-y-10 pb-24 sm:pb-12">
         {/* SECTION 1: MÓN ĂN HÔM NAY / THEO LỊCH TUẦN */}
         {(mainTab === 'today' || mainTab === 'all') && (
-          <section className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b-2 border-[#C05A3D]">
+          <section className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-2.5 border-b-2 border-[#C05A3D]">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#C05A3D] animate-pulse" />
-                  <span className="font-sans text-[11px] uppercase tracking-[0.25em] text-[#C05A3D] font-bold">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="w-2 h-2 rounded-full bg-[#C05A3D] animate-pulse" />
+                  <span className="font-sans text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-[#C05A3D] font-bold">
                     Thực Đơn Luân Phiên Thay Đổi
                   </span>
                 </div>
-                <h2 className="font-serif text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
-                  <Flame className="w-6 h-6 text-[#C05A3D]" />
+                <h2 className="font-serif text-lg sm:text-2xl font-bold uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-[#C05A3D]" />
                   <span>Mục 1: Món Ăn Hôm Nay ({selectedDay === 'today' ? todayLabel : getDayLabel(selectedDay)})</span>
-                  <span className="text-sm font-sans font-bold px-2.5 py-0.5 rounded-full bg-[#C05A3D] text-white">
+                  <span className="text-xs font-sans font-bold px-2 py-0.5 rounded-full bg-[#C05A3D] text-white">
                     {todaySpecialDishes.length} món
                   </span>
                 </h2>
@@ -287,16 +353,16 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsWeeklyOverviewModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-sm bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A] font-sans text-xs uppercase tracking-wider font-bold border border-black/10 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-sm bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A] font-sans text-[11px] uppercase tracking-wider font-bold border border-black/10 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Calendar className="w-4 h-4 text-[#C05A3D]" />
+                  <Calendar className="w-3.5 h-3.5 text-[#C05A3D]" />
                   <span>Xem lịch tuần</span>
                 </button>
               </div>
             </div>
 
             {todaySpecialDishes.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {todaySpecialDishes.map((dish) => (
                   <DishCard
                     key={dish.id}
@@ -308,13 +374,13 @@ export default function App() {
                 ))}
               </div>
             ) : (
-              <div className="bg-[#F4F1EA] rounded-lg p-8 text-center border border-black/10">
-                <UtensilsCrossed className="w-8 h-8 text-[#C05A3D] mx-auto mb-2 opacity-60" />
-                <p className="font-serif text-base font-bold text-[#1A1A1A]">
+              <div className="bg-[#F4F1EA] rounded-lg p-6 text-center border border-black/10">
+                <UtensilsCrossed className="w-7 h-7 text-[#C05A3D] mx-auto mb-2 opacity-60" />
+                <p className="font-serif text-sm font-bold text-[#1A1A1A]">
                   Không có món đặc biệt luân phiên nào cho mục này.
                 </p>
-                <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">
-                  Hãy kiểm tra bộ lọc danh mục hoặc xem danh mục Món Cố Định bên dưới.
+                <p className="font-sans text-[11px] text-[#1A1A1A]/60 mt-1">
+                  Hãy xem các món ngon trong danh mục Món Cố Định bên dưới.
                 </p>
               </div>
             )}
@@ -323,19 +389,19 @@ export default function App() {
 
         {/* SECTION 2: MÓN CỐ ĐỊNH PHỤC VỤ CẢ TUẦN */}
         {(mainTab === 'fixed' || mainTab === 'all' || mainTab === 'today') && (
-          <section className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b-2 border-[#2D463E]">
+          <section className="space-y-4 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-2.5 border-b-2 border-[#2D463E]">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#2D463E]" />
-                  <span className="font-sans text-[11px] uppercase tracking-[0.25em] text-[#2D463E] font-bold">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="w-2 h-2 rounded-full bg-[#2D463E]" />
+                  <span className="font-sans text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-[#2D463E] font-bold">
                     Món Phục Vụ Hằng Ngày • Xôi - Bánh Mì - Đồ Hũ Làm Sẵn
                   </span>
                 </div>
-                <h2 className="font-serif text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
-                  <Layers className="w-6 h-6 text-[#2D463E]" />
+                <h2 className="font-serif text-lg sm:text-2xl font-bold uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-[#2D463E]" />
                   <span>Mục 2: Món Cố Định (Bán Tất Cả Các Ngày)</span>
-                  <span className="text-sm font-sans font-bold px-2.5 py-0.5 rounded-full bg-[#2D463E] text-white">
+                  <span className="text-xs font-sans font-bold px-2 py-0.5 rounded-full bg-[#2D463E] text-white">
                     {fixedWeeklyDishes.length} món
                   </span>
                 </h2>
@@ -343,7 +409,7 @@ export default function App() {
             </div>
 
             {fixedWeeklyDishes.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {fixedWeeklyDishes.map((dish) => (
                   <DishCard
                     key={dish.id}
@@ -355,9 +421,9 @@ export default function App() {
                 ))}
               </div>
             ) : (
-              <div className="bg-[#F4F1EA] rounded-lg p-8 text-center border border-black/10">
-                <UtensilsCrossed className="w-8 h-8 text-[#2D463E] mx-auto mb-2 opacity-60" />
-                <p className="font-serif text-base font-bold text-[#1A1A1A]">
+              <div className="bg-[#F4F1EA] rounded-lg p-6 text-center border border-black/10">
+                <UtensilsCrossed className="w-7 h-7 text-[#2D463E] mx-auto mb-2 opacity-60" />
+                <p className="font-serif text-sm font-bold text-[#1A1A1A]">
                   Không có món cố định nào khớp với từ khoá tìm kiếm.
                 </p>
               </div>
@@ -412,9 +478,9 @@ export default function App() {
       </main>
 
       {/* Editorial Footer */}
-      <footer className="mt-auto bg-[#F4F1EA] border-t border-black/10 py-10">
+      <footer className="mt-auto bg-[#F4F1EA] border-t border-black/10 py-10 pb-28 sm:pb-10">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-black/10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-black/10">
             {/* Col 1 */}
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -423,7 +489,7 @@ export default function App() {
                   {shopInfo.name}
                 </span>
               </div>
-              <p className="text-xs text-[#1A1A1A]/70 font-sans leading-relaxed max-w-xs">
+              <p className="text-xs text-[#1A1A1A]/70 font-sans leading-relaxed max-w-sm">
                 {shopInfo.slogan || 'Bếp ăn chay thanh tịnh nội bộ & xôi chay phục vụ hằng ngày.'}
               </p>
             </div>
@@ -445,72 +511,26 @@ export default function App() {
                 </li>
               </ul>
             </div>
-
-            {/* Col 3: Staff Quick Tools & Admin Access */}
-            <div>
-              <h4 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#2D463E] mb-3">
-                Công Cụ Bếp Nội Bộ
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {isAdminLoggedIn ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        setEditingDish(null);
-                        setIsAddModalOpen(true);
-                      }}
-                      className="px-3.5 py-2 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5 text-[#C05A3D]" />
-                      <span>Thêm món</span>
-                    </button>
-
-                    <button
-                      onClick={() => setIsAdminModalOpen(true)}
-                      className="px-3.5 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#C05A3D] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#E5E1D8]" />
-                      <span>Trung Tâm Quản Trị</span>
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="px-4 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#C05A3D] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#C05A3D]" />
-                    <span>Đăng Nhập Quản Trị Bếp</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => setIsWeeklyOverviewModalOpen(true)}
-                  className="px-3.5 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Calendar className="w-3.5 h-3.5 text-[#C05A3D]" />
-                  <span>Lịch tuần</span>
-                </button>
-
-                {isAdminLoggedIn && (
-                  <button
-                    onClick={handleResetToDefault}
-                    className="px-3 py-2 rounded-sm bg-white hover:bg-[#E5E1D8] text-[#1A1A1A]/70 hover:text-[#1A1A1A] text-xs font-sans uppercase tracking-wider font-semibold border border-black/10 flex items-center gap-1 transition-colors cursor-pointer"
-                    title="Khôi phục danh sách món mẫu"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Khôi phục mẫu</span>
-                  </button>
-                )}
-              </div>
-            </div>
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-[#1A1A1A]/50">
-            <p>© {new Date().getFullYear()} {shopInfo.name} • System for Kitchen Management.</p>
+            <p>© {new Date().getFullYear()} {shopInfo.name} • Database: Firebase Cloud (prefab-sanctum-gt8c4)</p>
             <p className="font-serif italic">Thanh Tịnh • An Nhiên • Dinh Dưỡng</p>
           </div>
         </div>
       </footer>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        mainTab={mainTab}
+        setMainTab={setMainTab}
+        onOpenSearch={handleFocusSearch}
+        onOpenShopInfo={() => setIsShopInfoModalOpen(true)}
+        onOpenAdmin={() => handleRequireAdmin(() => setIsAdminModalOpen(true))}
+        onOpenWeeklyOverview={() => setIsWeeklyOverviewModalOpen(true)}
+        isAdminLoggedIn={isAdminLoggedIn}
+        todayLabel={todayLabel}
+      />
 
       {/* Dish Detail Modal */}
       <DishDetailModal
@@ -571,8 +591,8 @@ export default function App() {
         onDeleteDish={handleDeleteDish}
         onResetAllToAvailable={handleResetAllToAvailable}
         shopInfo={shopInfo}
-        onSaveShopInfo={setShopInfo}
-        onResetShopInfo={() => setShopInfo(DEFAULT_SHOP_INFO)}
+        onSaveShopInfo={handleSaveShopInfo}
+        onResetShopInfo={() => handleSaveShopInfo(DEFAULT_SHOP_INFO)}
       />
 
       {/* Admin Auth Modal */}

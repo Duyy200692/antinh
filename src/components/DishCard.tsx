@@ -99,9 +99,9 @@ export const DishCard: React.FC<DishCardProps> = ({
         </div>
 
         {/* Card Body */}
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-serif font-bold text-[#1A1A1A] text-lg leading-snug group-hover:text-[#C05A3D] transition-colors line-clamp-2">
+        <div className="p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-2 mb-1.5">
+            <h3 className="font-serif font-bold text-[#1A1A1A] text-base sm:text-lg leading-snug group-hover:text-[#C05A3D] transition-colors line-clamp-2">
               {dish.name}
             </h3>
           </div>
@@ -113,7 +113,7 @@ export const DishCard: React.FC<DishCardProps> = ({
       </div>
 
       {/* Card Footer: Price, Unit & Stock Indicator / Toggle */}
-      <div className="px-5 py-3.5 bg-[#F4F1EA] border-t border-black/5 flex items-center justify-between gap-2">
+      <div className="px-4 py-2.5 sm:px-5 sm:py-3 bg-[#F4F1EA] border-t border-black/5 flex items-center justify-between gap-2">
         <div>
           <span className="text-base font-serif font-bold text-[#C05A3D]">
             {dish.price}

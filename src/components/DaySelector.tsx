@@ -1,7 +1,7 @@
 import React from 'react';
 import { DayOfWeek } from '../types';
 import { DAYS_OF_WEEK } from '../data/mockDishes';
-import { getTodayDayOfWeek } from '../utils/dayUtils';
+import { getTodayDayOfWeek, getDayLabel } from '../utils/dayUtils';
 import { Calendar, Clock } from 'lucide-react';
 
 interface DaySelectorProps {
@@ -18,56 +18,26 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
   const todayDay = getTodayDayOfWeek();
 
   return (
-    <div className="bg-[#FDFCFB] border-b border-black/10 shadow-xs sticky top-[148px] sm:top-[142px] z-20">
-      <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex items-center gap-2 mb-2 text-[10px] font-sans font-bold text-[#1A1A1A]/40 uppercase tracking-[0.25em]">
-          <Calendar className="w-3.5 h-3.5 text-[#C05A3D]" />
-          <span>Lọc Theo Ngày Áp Dụng:</span>
+    <div className="bg-[#FDFCFB] border-b border-black/5 py-2">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center gap-2 mb-1.5 text-[9px] sm:text-[10px] font-sans font-bold text-[#1A1A1A]/50 uppercase tracking-[0.2em]">
+          <Calendar className="w-3 h-3 text-[#C05A3D]" />
+          <span>Lọc theo ngày trong tuần:</span>
         </div>
 
         {/* Horizontal Scrollable Day Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
           {/* Quick Option: Today */}
           <button
             onClick={() => onSelectDay('today')}
-            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-sans uppercase tracking-wider transition-all cursor-pointer border ${
+            className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] sm:text-xs font-sans uppercase tracking-wider transition-all cursor-pointer border ${
               selectedDay === 'today'
                 ? 'bg-[#C05A3D] text-white border-[#C05A3D] shadow-xs font-bold'
                 : 'bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#C05A3D] border-[#C05A3D]/30 font-semibold'
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Hôm nay</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold ${
-                selectedDay === 'today'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#E5E1D8] text-[#C05A3D]'
-              }`}
-            >
-              •
-            </span>
-          </button>
-
-          {/* All Week Fixed Items Tab */}
-          <button
-            onClick={() => onSelectDay('all')}
-            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-sans uppercase tracking-wider transition-all cursor-pointer border ${
-              selectedDay === 'all'
-                ? 'bg-[#2D463E] text-white border-[#2D463E] shadow-xs font-bold'
-                : 'bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A]/80 border-black/5 font-semibold'
-            }`}
-          >
-            <span>Cố định cả tuần</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold ${
-                selectedDay === 'all'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#E5E1D8] text-[#1A1A1A]/70'
-              }`}
-            >
-              {dishesCountByDay['all'] || 0}
-            </span>
+            <Clock className="w-3 h-3" />
+            <span>Hôm nay ({getDayLabel(todayDay)})</span>
           </button>
 
           {/* Monday to Sunday Tabs */}
@@ -80,7 +50,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
               <button
                 key={day.id}
                 onClick={() => onSelectDay(day.id)}
-                className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-sans uppercase tracking-wider transition-all cursor-pointer border relative ${
+                className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] sm:text-xs font-sans uppercase tracking-wider transition-all cursor-pointer border relative ${
                   isSelected
                     ? 'bg-[#2D463E] text-white border-[#2D463E] shadow-xs font-bold'
                     : isToday
@@ -93,7 +63,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-[#C05A3D]" title="Hôm nay" />
                 )}
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold ${
+                  className={`text-[9px] px-1 py-0.2 rounded-xs font-bold ${
                     isSelected
                       ? 'bg-white/20 text-white'
                       : isToday
