@@ -64,39 +64,78 @@ export function subscribeToDishes(
   onError?: (err: unknown) => void
 ) {
   const colRef = collection(db, DISHES_COLLECTION);
-  return onSnapshot(
+  const settingsDocRef = doc(db, SETTINGS_COLLECTION, MENU_DISHES_DOC);
+
+  let loadedFromCollection = false;
+
+  const unsubCol = onSnapshot(
     colRef,
     (snapshot) => {
-      if (snapshot.empty) {
+      if (!snapshot.empty) {
+        loadedFromCollection = true;
+        const loaded: DishItem[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as DishItem;
+          loaded.push({ ...data, id: docSnap.id });
+        });
+        onSuccess(loaded);
+      } else if (!loadedFromCollection) {
         onSuccess([]);
-        return;
       }
-      const loaded: DishItem[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data() as DishItem;
-        loaded.push({ ...data, id: docSnap.id });
-      });
-      onSuccess(loaded);
     },
     (err) => {
       console.warn('Firestore dishes subscription error:', err);
       if (onError) onError(err);
     }
   );
+
+  const unsubSettings = onSnapshot(
+    settingsDocRef,
+    (docSnap) => {
+      if (docSnap.exists() && !loadedFromCollection) {
+        const data = docSnap.data();
+        const list = data.list || data.dishes || data.items;
+        if (Array.isArray(list) && list.length > 0) {
+          onSuccess(list as DishItem[]);
+        }
+      }
+    },
+    () => {}
+  );
+
+  return () => {
+    unsubCol();
+    unsubSettings();
+  };
 }
 
-// Save or Update a Dish in Firestore
+// Save or Update a Dish in Firestore (Writes to tam_chay_dishes, dishes, & settings/menu_dishes_list)
 export async function saveDishToFirestore(dish: DishItem): Promise<boolean> {
   try {
-    const docRef = doc(db, DISHES_COLLECTION, dish.id);
     const cleanDish = sanitizeData(dish);
-    await setDoc(docRef, cleanDish, { merge: true });
-    console.log('✅ Đã lưu món vào Firestore tam_chay_dishes:', dish.name, dish.id);
+
+    // Save to primary collection
+    await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
+
+    // Save to secondary collection for fallback
+    await setDoc(doc(db, 'dishes', dish.id), cleanDish, { merge: true });
+
+    console.log('✅ Đã lưu món vào Firestore:', dish.name, dish.id);
 
     // Fetch current list to update settings/menu_dishes_list doc
     const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
     const allDishes: DishItem[] = [];
     snapshot.forEach((d) => allDishes.push(d.data() as DishItem));
+    
+    // Ensure the saved dish is in allDishes if snapshot hasn't updated yet
+    const exists = allDishes.some((d) => d.id === dish.id);
+    if (!exists) {
+      allDishes.push(cleanDish);
+    } else {
+      const idx = allDishes.findIndex((d) => d.id === dish.id);
+      allDishes[idx] = cleanDish;
+    }
+
     await syncToSettingsDocument(allDishes);
 
     return true;
@@ -109,14 +148,18 @@ export async function saveDishToFirestore(dish: DishItem): Promise<boolean> {
 // Delete a Dish from Firestore
 export async function deleteDishFromFirestore(dishId: string): Promise<boolean> {
   try {
-    const docRef = doc(db, DISHES_COLLECTION, dishId);
-    await deleteDoc(docRef);
+    await deleteDoc(doc(db, DISHES_COLLECTION, dishId));
+    await deleteDoc(doc(db, 'dishes', dishId));
     console.log('✅ Đã xóa món khỏi Firestore:', dishId);
 
     // Fetch remaining list to update settings/menu_dishes_list doc
     const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
     const allDishes: DishItem[] = [];
-    snapshot.forEach((d) => allDishes.push(d.data() as DishItem));
+    snapshot.forEach((d) => {
+      if (d.id !== dishId) {
+        allDishes.push(d.data() as DishItem);
+      }
+    });
     await syncToSettingsDocument(allDishes);
 
     return true;
@@ -134,6 +177,7 @@ export async function seedInitialDishesToFirestore(dishes: DishItem[]): Promise<
       for (const dish of dishes) {
         const cleanDish = sanitizeData(dish);
         await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish);
+        await setDoc(doc(db, 'dishes', dish.id), cleanDish);
       }
       await syncToSettingsDocument(dishes);
       console.log('✅ Đã nạp dữ liệu món ban đầu lên Firestore tam_chay_dishes & settings/menu_dishes_list');
@@ -143,17 +187,26 @@ export async function seedInitialDishesToFirestore(dishes: DishItem[]): Promise<
   }
 }
 
-// Subscribe to Shop Info in Firestore
+// Subscribe to Shop Info in Firestore (Listens to tam_chay_shop_info and settings/shop_info)
 export function subscribeToShopInfo(
   onSuccess: (info: ShopInfo) => void,
   onError?: (err: unknown) => void
 ) {
-  const docRef = doc(db, SHOP_INFO_COLLECTION, SHOP_INFO_DOC);
-  return onSnapshot(
-    docRef,
+  const docRefMain = doc(db, SHOP_INFO_COLLECTION, SHOP_INFO_DOC);
+  const docRefSettings = doc(db, SETTINGS_COLLECTION, SHOP_INFO_SETTINGS_DOC);
+
+  // Subscribe to main
+  const unsubMain = onSnapshot(
+    docRefMain,
     (docSnap) => {
       if (docSnap.exists()) {
-        onSuccess(docSnap.data() as ShopInfo);
+        const data = docSnap.data();
+        // If data is stored flat
+        if (data.name) {
+          onSuccess(data as ShopInfo);
+        } else if (data.shopInfo) {
+          onSuccess(data.shopInfo as ShopInfo);
+        }
       }
     },
     (err) => {
@@ -161,6 +214,29 @@ export function subscribeToShopInfo(
       if (onError) onError(err);
     }
   );
+
+  // Also subscribe to settings/shop_info in case manual edit happened in console
+  const unsubSettings = onSnapshot(
+    docRefSettings,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.shopInfo && data.shopInfo.name) {
+          onSuccess(data.shopInfo as ShopInfo);
+        } else if (data.name) {
+          onSuccess(data as ShopInfo);
+        }
+      }
+    },
+    (err) => {
+      // Silently ignore settings doc missing
+    }
+  );
+
+  return () => {
+    unsubMain();
+    unsubSettings();
+  };
 }
 
 // Save Shop Info to Firestore
