@@ -28,7 +28,7 @@ import {
   saveShopInfoToFirestore,
   testFirestoreConnection,
 } from './firebase';
-import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers } from 'lucide-react';
+import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers, Edit3 } from 'lucide-react';
 
 const DISHES_STORAGE_KEY = 'tam_chay_internal_menu_dishes_v2';
 const SHOP_STORAGE_KEY = 'tam_chay_shop_info_v2';
@@ -488,6 +488,15 @@ export default function App() {
                 <span className="font-serif font-black text-xl uppercase tracking-tighter text-[#1A1A1A]">
                   {shopInfo.name}
                 </span>
+                {isAdminLoggedIn && (
+                  <button
+                    onClick={() => setIsShopInfoModalOpen(true)}
+                    className="p-1 rounded bg-[#E5E1D8] hover:bg-[#C05A3D] text-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
+                    title="Chỉnh sửa nhanh tên quán & slogan"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
               <p className="text-xs text-[#1A1A1A]/70 font-sans leading-relaxed max-w-sm">
                 {shopInfo.slogan || 'Bếp ăn chay thanh tịnh nội bộ & xôi chay phục vụ hằng ngày.'}
@@ -496,9 +505,21 @@ export default function App() {
 
             {/* Col 2 */}
             <div>
-              <h4 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#C05A3D] mb-3">
-                Thời Gian & Liên Hệ
-              </h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#C05A3D]">
+                  Thời Gian & Liên Hệ
+                </h4>
+                {isAdminLoggedIn && (
+                  <button
+                    onClick={() => setIsShopInfoModalOpen(true)}
+                    className="px-2 py-0.5 rounded bg-[#E5E1D8] hover:bg-[#C05A3D] text-[#1A1A1A] hover:text-white transition-colors cursor-pointer text-[10px] font-sans font-bold uppercase tracking-wider flex items-center gap-1"
+                    title="Chỉnh sửa nhanh thông tin liên hệ"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Sửa liên hệ</span>
+                  </button>
+                )}
+              </div>
               <ul className="space-y-2 text-xs font-sans text-[#1A1A1A]/80">
                 <li>
                   <span className="font-bold">Giờ mở cửa:</span> {shopInfo.openHours}

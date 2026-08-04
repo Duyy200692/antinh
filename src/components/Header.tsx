@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, PlusCircle, Calendar, Info, Sparkles, ShieldCheck, LogOut, UserCheck } from 'lucide-react';
+import { Search, PlusCircle, Calendar, Info, Sparkles, ShieldCheck, LogOut, UserCheck, Edit3 } from 'lucide-react';
 import { DayOfWeek, ShopInfo } from '../types';
 import { getDayLabel, getTodayDayOfWeek } from '../utils/dayUtils';
 import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
@@ -55,6 +55,14 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={onOpenShopInfoModal}
+                className="px-2 py-0.5 rounded bg-[#E5E1D8]/20 hover:bg-[#C05A3D] text-white font-sans text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1"
+                title="Sửa nhanh thông tin quán"
+              >
+                <Edit3 className="w-3 h-3 text-[#C05A3D] group-hover:text-white" />
+                <span>Sửa TT Quán</span>
+              </button>
               <button
                 onClick={onOpenAdminModal}
                 className="px-2 py-0.5 rounded bg-[#C05A3D] hover:bg-[#a0452c] text-white font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
@@ -117,9 +125,14 @@ export const Header: React.FC<HeaderProps> = ({
                   {shopInfo.name}
                 </h1>
                 {isAdminLoggedIn ? (
-                  <span className="font-sans text-[9px] sm:text-[10px] uppercase tracking-[0.15em] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm bg-[#C05A3D] text-white">
-                    Admin
-                  </span>
+                  <button
+                    onClick={onOpenShopInfoModal}
+                    title="Chỉnh sửa nhanh thông tin quán"
+                    className="p-1.5 rounded bg-[#F4F1EA] hover:bg-[#C05A3D] text-[#C05A3D] hover:text-white border border-black/10 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-sans font-bold uppercase tracking-wider hidden sm:inline">Sửa</span>
+                  </button>
                 ) : (
                   <span className="font-sans text-[9px] sm:text-[10px] uppercase tracking-[0.15em] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm bg-[#2D463E] text-white">
                     Thực Đơn
