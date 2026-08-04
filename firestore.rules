@@ -1,16 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Menu dishes collection: public read, write for menu management
+    // Menu dishes collection (tam_chay_dishes & dishes)
+    match /tam_chay_dishes/{dishId} {
+      allow read, write: if true;
+    }
     match /dishes/{dishId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if true;
     }
     
-    // Shop information collection: public read, write for shop config
+    // Shop information collection (tam_chay_shop_info & shopInfo)
+    match /tam_chay_shop_info/{docId} {
+      allow read, write: if true;
+    }
     match /shopInfo/{docId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if true;
     }
   }
 }

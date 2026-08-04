@@ -29,10 +29,15 @@ export async function testFirestoreConnection(): Promise<boolean> {
   }
 }
 
-// Sync dishes with Firestore
-const DISHES_COLLECTION = 'dishes';
-const SHOP_INFO_COLLECTION = 'shopInfo';
+// Sync dishes with Firestore - Independent collection for Tâm Chay
+const DISHES_COLLECTION = 'tam_chay_dishes';
+const SHOP_INFO_COLLECTION = 'tam_chay_shop_info';
 const SHOP_INFO_DOC = 'main';
+
+// Helper to remove 'undefined' fields before sending to Firestore
+function sanitizeData(obj: any): any {
+  return JSON.parse(JSON.stringify(obj));
+}
 
 // Subscribe to real-time dishes updates from Firestore
 export function subscribeToDishes(
@@ -62,22 +67,29 @@ export function subscribeToDishes(
 }
 
 // Save or Update a Dish in Firestore
-export async function saveDishToFirestore(dish: DishItem): Promise<void> {
+export async function saveDishToFirestore(dish: DishItem): Promise<boolean> {
   try {
     const docRef = doc(db, DISHES_COLLECTION, dish.id);
-    await setDoc(docRef, dish, { merge: true });
+    const cleanDish = sanitizeData(dish);
+    await setDoc(docRef, cleanDish, { merge: true });
+    console.log('✅ Đã lưu món vào Firestore:', dish.name, dish.id);
+    return true;
   } catch (err) {
-    console.error('Error saving dish to Firestore:', err);
+    console.error('❌ Lỗi khi lưu món vào Firestore:', err);
+    return false;
   }
 }
 
 // Delete a Dish from Firestore
-export async function deleteDishFromFirestore(dishId: string): Promise<void> {
+export async function deleteDishFromFirestore(dishId: string): Promise<boolean> {
   try {
     const docRef = doc(db, DISHES_COLLECTION, dishId);
     await deleteDoc(docRef);
+    console.log('✅ Đã xóa món khỏi Firestore:', dishId);
+    return true;
   } catch (err) {
-    console.error('Error deleting dish from Firestore:', err);
+    console.error('❌ Lỗi khi xóa món khỏi Firestore:', err);
+    return false;
   }
 }
 
@@ -87,8 +99,10 @@ export async function seedInitialDishesToFirestore(dishes: DishItem[]): Promise<
     const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
     if (snapshot.empty) {
       for (const dish of dishes) {
-        await setDoc(doc(db, DISHES_COLLECTION, dish.id), dish);
+        const cleanDish = sanitizeData(dish);
+        await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish);
       }
+      console.log('✅ Đã nạp dữ liệu món ban đầu lên Firestore tam_chay_dishes');
     }
   } catch (err) {
     console.error('Error seeding dishes to Firestore:', err);
@@ -116,11 +130,15 @@ export function subscribeToShopInfo(
 }
 
 // Save Shop Info to Firestore
-export async function saveShopInfoToFirestore(info: ShopInfo): Promise<void> {
+export async function saveShopInfoToFirestore(info: ShopInfo): Promise<boolean> {
   try {
     const docRef = doc(db, SHOP_INFO_COLLECTION, SHOP_INFO_DOC);
-    await setDoc(docRef, info, { merge: true });
+    const cleanInfo = sanitizeData(info);
+    await setDoc(docRef, cleanInfo, { merge: true });
+    console.log('✅ Đã lưu thông tin quán vào Firestore tam_chay_shop_info');
+    return true;
   } catch (err) {
-    console.error('Error saving shop info to Firestore:', err);
+    console.error('❌ Lỗi khi lưu thông tin quán vào Firestore:', err);
+    return false;
   }
 }

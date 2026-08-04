@@ -514,7 +514,7 @@ export default function App() {
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-[#1A1A1A]/50">
-            <p>© {new Date().getFullYear()} {shopInfo.name} • Database: Firebase Cloud (prefab-sanctum-gt8c4)</p>
+            <p>© {new Date().getFullYear()} {shopInfo.name} • Database: Firebase Cloud (prefab-sanctum-gt8c4 / collection: tam_chay_dishes)</p>
             <p className="font-serif italic">Thanh Tịnh • An Nhiên • Dinh Dưỡng</p>
           </div>
         </div>
