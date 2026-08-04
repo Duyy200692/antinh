@@ -186,18 +186,18 @@ export async function syncAllDishesToFirestore(dishes: DishItem[]): Promise<bool
   }
 }
 
-// Seed initial dishes into Firestore if collection is empty or incomplete
+// Seed initial dishes into Firestore if collection is empty
 export async function seedInitialDishesToFirestore(dishes: DishItem[]): Promise<void> {
   try {
     const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
-    if (snapshot.empty || snapshot.size < dishes.length) {
+    if (snapshot.empty) {
       for (const dish of dishes) {
         const cleanDish = sanitizeData(dish);
         await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
         await setDoc(doc(db, 'dishes', dish.id), cleanDish, { merge: true });
       }
       await syncToSettingsDocument(dishes);
-      console.log('✅ Đã nạp đầy đủ dữ liệu món lên Firestore tam_chay_dishes & settings/menu_dishes_list');
+      console.log('✅ Đã nạp dữ liệu món ban đầu lên Firestore tam_chay_dishes & settings/menu_dishes_list');
     }
   } catch (err) {
     console.error('Error seeding dishes to Firestore:', err);

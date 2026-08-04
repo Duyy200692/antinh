@@ -12,8 +12,8 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
  */
 export async function compressImageToWebp(
   file: File,
-  maxDimension = 1200,
-  quality = 0.82
+  maxDimension = 800,
+  quality = 0.75
 ): Promise<{ webpDataUrl: string; originalSize: number; compressedSize: number }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -70,10 +70,6 @@ export default function App() {
     const unsubscribeDishes = subscribeToDishes((remoteDishes) => {
       if (remoteDishes && remoteDishes.length > 0) {
         setDishes(remoteDishes);
-        // If Firestore has only partial items (e.g. 2 items), seed the rest
-        if (remoteDishes.length < INITIAL_DISHES.length) {
-          seedInitialDishesToFirestore(INITIAL_DISHES);
-        }
       } else {
         // If Firestore is empty, seed initial dishes
         seedInitialDishesToFirestore(INITIAL_DISHES);
