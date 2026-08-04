@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Menu dishes collection (tam_chay_dishes & dishes)
+    // Menu dishes collection
     match /tam_chay_dishes/{dishId} {
       allow read, write: if true;
     }
@@ -9,11 +9,16 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
-    // Shop information collection (tam_chay_shop_info & shopInfo)
+    // Shop information collection
     match /tam_chay_shop_info/{docId} {
       allow read, write: if true;
     }
     match /shopInfo/{docId} {
+      allow read, write: if true;
+    }
+
+    // Settings collection (menu_dishes_list & shop_info)
+    match /settings/{docId} {
       allow read, write: if true;
     }
   }

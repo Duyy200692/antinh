@@ -562,6 +562,17 @@ export default function App() {
       <ShopInfoModal
         isOpen={isShopInfoModalOpen}
         onClose={() => setIsShopInfoModalOpen(false)}
+        shopInfo={shopInfo}
+        onSaveShopInfo={handleSaveShopInfo}
+        isAdminLoggedIn={isAdminLoggedIn}
+        onOpenAdminModal={() => {
+          setIsShopInfoModalOpen(false);
+          setIsAdminModalOpen(true);
+        }}
+        onOpenAuthModal={() => {
+          setIsShopInfoModalOpen(false);
+          setIsAuthModalOpen(true);
+        }}
       />
 
       {/* Weekly Overview Modal */}
