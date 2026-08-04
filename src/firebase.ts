@@ -109,98 +109,65 @@ export function subscribeToDishes(
   };
 }
 
-// Save or Update a Dish in Firestore (Writes to tam_chay_dishes, dishes, & settings/menu_dishes_list)
-export async function saveDishToFirestore(dish: DishItem): Promise<boolean> {
+// Save or Update a Dish in Firestore
+export async function saveDishToFirestore(dish: DishItem): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
   try {
     const cleanDish = sanitizeData(dish);
-
-    // Save to primary collection
+    // Single write to primary collection to minimize quota usage
     await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
-
-    // Save to secondary collection for fallback
-    await setDoc(doc(db, 'dishes', dish.id), cleanDish, { merge: true });
-
     console.log('✅ Đã lưu món vào Firestore:', dish.name, dish.id);
-
-    // Fetch current list to update settings/menu_dishes_list doc
-    const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
-    const allDishes: DishItem[] = [];
-    snapshot.forEach((d) => allDishes.push(d.data() as DishItem));
-    
-    // Ensure the saved dish is in allDishes if snapshot hasn't updated yet
-    const exists = allDishes.some((d) => d.id === dish.id);
-    if (!exists) {
-      allDishes.push(cleanDish);
-    } else {
-      const idx = allDishes.findIndex((d) => d.id === dish.id);
-      allDishes[idx] = cleanDish;
-    }
-
-    await syncToSettingsDocument(allDishes);
-
-    return true;
-  } catch (err) {
-    console.error('❌ Lỗi khi lưu món vào Firestore:', err);
-    return false;
+    return { success: true };
+  } catch (err: any) {
+    console.warn('⚠️ Lỗi khi lưu món vào Firestore:', err?.code || err?.message || err);
+    const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
+    return { success: false, isQuotaExceeded: isQuota };
   }
 }
 
 // Delete a Dish from Firestore
-export async function deleteDishFromFirestore(dishId: string): Promise<boolean> {
+export async function deleteDishFromFirestore(dishId: string): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
   try {
     await deleteDoc(doc(db, DISHES_COLLECTION, dishId));
-    await deleteDoc(doc(db, 'dishes', dishId));
     console.log('✅ Đã xóa món khỏi Firestore:', dishId);
-
-    // Fetch remaining list to update settings/menu_dishes_list doc
-    const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
-    const allDishes: DishItem[] = [];
-    snapshot.forEach((d) => {
-      if (d.id !== dishId) {
-        allDishes.push(d.data() as DishItem);
-      }
-    });
-    await syncToSettingsDocument(allDishes);
-
-    return true;
-  } catch (err) {
-    console.error('❌ Lỗi khi xóa món khỏi Firestore:', err);
-    return false;
+    return { success: true };
+  } catch (err: any) {
+    console.warn('⚠️ Lỗi khi xóa món khỏi Firestore:', err?.code || err?.message || err);
+    const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
+    return { success: false, isQuotaExceeded: isQuota };
   }
 }
 
-// Force sync all dishes to Firestore
-export async function syncAllDishesToFirestore(dishes: DishItem[]): Promise<boolean> {
+// Force sync all dishes to Firestore using a single settings document to conserve write quota
+export async function syncAllDishesToFirestore(dishes: DishItem[]): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
   try {
-    for (const dish of dishes) {
-      const cleanDish = sanitizeData(dish);
-      await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
-      await setDoc(doc(db, 'dishes', dish.id), cleanDish, { merge: true });
-    }
-    await syncToSettingsDocument(dishes);
-    console.log('✅ Đã đồng bộ tất cả', dishes.length, 'món lên Firestore tam_chay_dishes');
-    return true;
-  } catch (err) {
-    console.error('❌ Lỗi đồng bộ tất cả món lên Firestore:', err);
-    return false;
+    const cleanDishes = sanitizeData(dishes);
+    // Write as a single document to settings/menu_dishes_list (1 write instead of 70+ writes!)
+    await setDoc(doc(db, SETTINGS_COLLECTION, MENU_DISHES_DOC), {
+      list: cleanDishes,
+      updatedAt: new Date().toISOString()
+    });
+    console.log('✅ Đã đồng bộ tất cả', dishes.length, 'món lên Firestore dạng gói 1 write!');
+    return { success: true };
+  } catch (err: any) {
+    console.warn('⚠️ Lỗi đồng bộ tất cả món lên Firestore:', err?.code || err?.message || err);
+    const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
+    return { success: false, isQuotaExceeded: isQuota };
   }
 }
 
-// Seed initial dishes into Firestore if collection is empty
+// Seed initial dishes into Firestore if collection is empty (Single doc write to save quota)
 export async function seedInitialDishesToFirestore(dishes: DishItem[]): Promise<void> {
   try {
-    const snapshot = await getDocs(collection(db, DISHES_COLLECTION));
-    if (snapshot.empty) {
-      for (const dish of dishes) {
-        const cleanDish = sanitizeData(dish);
-        await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
-        await setDoc(doc(db, 'dishes', dish.id), cleanDish, { merge: true });
-      }
-      await syncToSettingsDocument(dishes);
-      console.log('✅ Đã nạp dữ liệu món ban đầu lên Firestore tam_chay_dishes & settings/menu_dishes_list');
+    const docSnap = await getDocFromServer(doc(db, SETTINGS_COLLECTION, MENU_DISHES_DOC)).catch(() => null);
+    if (!docSnap || !docSnap.exists()) {
+      await setDoc(doc(db, SETTINGS_COLLECTION, MENU_DISHES_DOC), {
+        list: sanitizeData(dishes),
+        updatedAt: new Date().toISOString()
+      });
+      console.log('✅ Đã nạp dữ liệu món ban đầu lên Firestore settings/menu_dishes_list');
     }
-  } catch (err) {
-    console.error('Error seeding dishes to Firestore:', err);
+  } catch (err: any) {
+    console.warn('Cảnh báo nạp dữ liệu ban đầu Firestore (Quota):', err?.code || err?.message || err);
   }
 }
 
@@ -257,22 +224,16 @@ export function subscribeToShopInfo(
 }
 
 // Save Shop Info to Firestore
-export async function saveShopInfoToFirestore(info: ShopInfo): Promise<boolean> {
+export async function saveShopInfoToFirestore(info: ShopInfo): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
   try {
     const docRef = doc(db, SHOP_INFO_COLLECTION, SHOP_INFO_DOC);
     const cleanInfo = sanitizeData(info);
     await setDoc(docRef, cleanInfo, { merge: true });
-
-    // Also update settings/shop_info
-    await setDoc(doc(db, SETTINGS_COLLECTION, SHOP_INFO_SETTINGS_DOC), {
-      shopInfo: cleanInfo,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-
-    console.log('✅ Đã lưu thông tin quán vào Firestore tam_chay_shop_info & settings/shop_info');
-    return true;
-  } catch (err) {
-    console.error('❌ Lỗi khi lưu thông tin quán vào Firestore:', err);
-    return false;
+    console.log('✅ Đã lưu thông tin quán vào Firestore tam_chay_shop_info');
+    return { success: true };
+  } catch (err: any) {
+    console.warn('⚠️ Lỗi khi lưu thông tin quán vào Firestore:', err?.code || err?.message || err);
+    const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
+    return { success: false, isQuotaExceeded: isQuota };
   }
 }

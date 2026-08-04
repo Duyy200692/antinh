@@ -237,6 +237,7 @@ export default function App() {
   };
 
   const handleSaveDish = async (savedDish: DishItem) => {
+    // 1. Update React state immediately
     setDishes((prev) => {
       const exists = prev.some((d) => d.id === savedDish.id);
       if (exists) {
@@ -245,8 +246,22 @@ export default function App() {
         return [savedDish, ...prev];
       }
     });
-    // Persist to Firestore
-    await saveDishToFirestore(savedDish);
+
+    // 2. Persist to localStorage immediately
+    try {
+      const updatedList = dishes.some((d) => d.id === savedDish.id)
+        ? dishes.map((d) => (d.id === savedDish.id ? savedDish : d))
+        : [savedDish, ...dishes];
+      localStorage.setItem(DISHES_STORAGE_KEY, JSON.stringify(updatedList));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+
+    // 3. Persist to Firestore & handle quota gracefully
+    const res = await saveDishToFirestore(savedDish);
+    if (res.isQuotaExceeded) {
+      alert('⚠️ Món ăn đã được lưu vào bộ nhớ web! (Lưu ý: Firebase Cloud hiện tạm hết hạn ngạch Quota miễn phí trong ngày, dữ liệu sẽ tự đồng bộ lên Cloud khi Firebase reset vào ngày mai).');
+    }
   };
 
   const handleSyncAllToFirestore = async () => {
@@ -256,26 +271,34 @@ export default function App() {
     dishes.forEach((d) => dishMap.set(d.id, d));
     const fullList = Array.from(dishMap.values());
 
-    const success = await syncAllDishesToFirestore(fullList);
-    if (success) {
-      alert(`✅ Đã đồng bộ thành công tất cả ${fullList.length} món ăn lên Firestore Cloud (collection: tam_chay_dishes)!`);
+    const res = await syncAllDishesToFirestore(fullList);
+    if (res.success) {
+      alert(`✅ Đã đồng bộ thành công tất cả ${fullList.length} món ăn lên Firestore Cloud!`);
+    } else if (res.isQuotaExceeded) {
+      alert('⚠️ Firebase Cloud hiện đã đạt hạn ngạch Quota ghi miễn phí trong ngày (Free daily write limit). Dữ liệu của bạn đã được lưu an toàn tuyệt đối trên Trình Duyệt Local!');
     } else {
       alert('❌ Có lỗi khi đồng bộ lên Firebase Cloud. Vui lòng kiểm tra lại kết nối.');
     }
   };
 
-  const handleDeleteDish = (dishId: string) => {
+  const handleDeleteDish = async (dishId: string) => {
     setDishes((prev) => prev.filter((d) => d.id !== dishId));
     if (selectedDishForDetail?.id === dishId) {
       setSelectedDishForDetail(null);
     }
     // Delete from Firestore
-    deleteDishFromFirestore(dishId);
+    const res = await deleteDishFromFirestore(dishId);
+    if (res.isQuotaExceeded) {
+      console.warn('Firebase Quota exceeded on delete. Local state updated.');
+    }
   };
 
-  const handleSaveShopInfo = (newShopInfo: ShopInfo) => {
+  const handleSaveShopInfo = async (newShopInfo: ShopInfo) => {
     setShopInfo(newShopInfo);
-    saveShopInfoToFirestore(newShopInfo);
+    const res = await saveShopInfoToFirestore(newShopInfo);
+    if (res.isQuotaExceeded) {
+      alert('⚠️ Thông tin quán đã lưu vào bộ nhớ web! (Firebase Cloud tạm hết Quota hôm nay).');
+    }
   };
 
   const handleResetToDefault = () => {
