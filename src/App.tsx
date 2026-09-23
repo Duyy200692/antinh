@@ -127,14 +127,8 @@ export default function App() {
     return res.success || true;
   };
 
-  // Admin Auth State
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
+  // Admin Auth State (Default to false so customers opening shared links see guest view)
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
 
   // Main navigation tab: 'today' | 'fixed' | 'all'
   const [mainTab, setMainTab] = useState<'today' | 'fixed' | 'all'>('today');
