@@ -30,6 +30,7 @@ export interface ShopInfo {
   openHours: string;
   slogan: string;
   features: string[];
+  footerNote?: string;
 }
 
 export interface DayConfig {

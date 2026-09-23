@@ -492,4 +492,5 @@ export const SHOP_INFO = {
     'Bánh hạt ngũ cốc dinh dưỡng healthy',
     'Nhận đặt làm xôi & bánh mì số lượng lớn cho sự kiện, cúng rằm',
   ],
+  footerNote: '© 2026 AN TỊNH • Thực đơn món chay thanh tịnh',
 };

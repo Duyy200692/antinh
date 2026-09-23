@@ -574,8 +574,20 @@ export default function App() {
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-[#1A1A1A]/50">
-            <p>© {new Date().getFullYear()} {shopInfo.name} • Database: Firebase Cloud (prefab-sanctum-gt8c4 / collection: tam_chay_dishes)</p>
-            <p className="font-serif italic">Thanh Tịnh • An Nhiên • Dinh Dưỡng</p>
+            <p className="flex items-center gap-1.5 flex-wrap">
+              <span>{shopInfo.footerNote || `© ${new Date().getFullYear()} ${shopInfo.name} • Thực đơn món chay thanh tịnh`}</span>
+              {isAdminLoggedIn && (
+                <button
+                  onClick={() => setIsShopInfoModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/5 hover:bg-black/10 text-[#C05A3D] text-[10px] font-bold cursor-pointer transition-colors"
+                  title="Bấm để chỉnh sửa dòng chữ chân trang"
+                >
+                  <Edit3 className="w-2.5 h-2.5" />
+                  <span>Sửa</span>
+                </button>
+              )}
+            </p>
+            <p className="italic">Thanh Tịnh • An Nhiên • Dinh Dưỡng</p>
           </div>
         </div>
       </footer>

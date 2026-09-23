@@ -65,7 +65,19 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [formContactPerson, setFormContactPerson] = useState(shopInfo.contactPerson);
   const [formOpenHours, setFormOpenHours] = useState(shopInfo.openHours);
   const [formSlogan, setFormSlogan] = useState(shopInfo.slogan);
+  const [formFooterNote, setFormFooterNote] = useState(shopInfo.footerNote || '');
   const [shopSaveSuccess, setShopSaveSuccess] = useState(false);
+
+  // Sync state when shopInfo changes
+  React.useEffect(() => {
+    setFormName(shopInfo.name);
+    setFormAddress(shopInfo.address);
+    setFormPhone(shopInfo.phone);
+    setFormContactPerson(shopInfo.contactPerson);
+    setFormOpenHours(shopInfo.openHours);
+    setFormSlogan(shopInfo.slogan);
+    setFormFooterNote(shopInfo.footerNote || '');
+  }, [shopInfo]);
 
   if (!isOpen) return null;
 
@@ -102,6 +114,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       contactPerson: formContactPerson,
       openHours: formOpenHours,
       slogan: formSlogan,
+      footerNote: formFooterNote,
     });
     setShopSaveSuccess(true);
     setTimeout(() => setShopSaveSuccess(false), 2500);
@@ -556,6 +569,22 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   placeholder="VD: Chúc quý khách có một sức khoẻ tốt..."
                   className="w-full px-4 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
                 />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
+                  Dòng Chữ Chân Trang (Bản quyền / Database Note dưới cùng trang)
+                </label>
+                <input
+                  type="text"
+                  value={formFooterNote}
+                  onChange={(e) => setFormFooterNote(e.target.value)}
+                  placeholder="VD: © 2026 AN TỊNH • Thực đơn món chay thanh tịnh..."
+                  className="w-full px-4 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
+                />
+                <p className="text-[11px] text-[#1A1A1A]/60 font-sans mt-1">
+                  Tuỳ chỉnh nội dung dòng chữ dưới chân trang. Nếu để trống, hệ thống sẽ tự động hiển thị theo định dạng mặc định.
+                </p>
               </div>
             </div>
 

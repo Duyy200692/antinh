@@ -29,6 +29,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
   const [formContactPerson, setFormContactPerson] = useState(shopInfo.contactPerson);
   const [formOpenHours, setFormOpenHours] = useState(shopInfo.openHours);
   const [formSlogan, setFormSlogan] = useState(shopInfo.slogan);
+  const [formFooterNote, setFormFooterNote] = useState(shopInfo.footerNote || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Sync state when shopInfo changes or modal opens
@@ -39,6 +40,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
     setFormContactPerson(shopInfo.contactPerson);
     setFormOpenHours(shopInfo.openHours);
     setFormSlogan(shopInfo.slogan);
+    setFormFooterNote(shopInfo.footerNote || '');
   }, [shopInfo, isOpen]);
 
   if (!isOpen) return null;
@@ -62,6 +64,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
         contactPerson: formContactPerson,
         openHours: formOpenHours,
         slogan: formSlogan,
+        footerNote: formFooterNote,
       });
     }
     setSaveSuccess(true);
@@ -183,6 +186,22 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
                 onChange={(e) => setFormSlogan(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
+                Dòng Chữ Chân Trang (Bản quyền / Database Note dưới cùng trang)
+              </label>
+              <input
+                type="text"
+                placeholder="VD: © 2026 AN TỊNH • Thực đơn món chay thanh tịnh..."
+                value={formFooterNote}
+                onChange={(e) => setFormFooterNote(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
+              />
+              <p className="text-[11px] text-[#1A1A1A]/60 mt-1">
+                Để trống nếu muốn tự động hiển thị theo định dạng chuẩn. Bạn có thể sửa thành bất kỳ nội dung nào bạn muốn!
+              </p>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10">
