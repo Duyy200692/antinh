@@ -20,6 +20,10 @@ import {
   Sparkles,
   Phone,
   MapPin,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Lock,
 } from 'lucide-react';
 
 interface AdminModalProps {
@@ -35,6 +39,8 @@ interface AdminModalProps {
   shopInfo: ShopInfo;
   onSaveShopInfo: (info: ShopInfo) => void;
   onResetShopInfo: () => void;
+  currentPin?: string;
+  onUpdatePin?: (newPin: string) => Promise<boolean>;
 }
 
 export const AdminModal: React.FC<AdminModalProps> = ({
@@ -50,13 +56,27 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   shopInfo,
   onSaveShopInfo,
   onResetShopInfo,
+  currentPin = '1234',
+  onUpdatePin,
 }) => {
-  const [activeTab, setActiveTab] = useState<'dishes' | 'shop'>('dishes');
+  if (!isOpen) return null;
+
+  const [activeTab, setActiveTab] = useState<'dishes' | 'shop' | 'security'>('dishes');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<DishCategory | 'all'>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'available' | 'sold_out'>('all');
   const [customNoteDishId, setCustomNoteDishId] = useState<string | null>(null);
   const [tempNoteText, setTempNoteText] = useState('');
+
+  // PIN Change State
+  const [oldPinInput, setOldPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [pinChangeError, setPinChangeError] = useState('');
+  const [pinChangeSuccess, setPinChangeSuccess] = useState('');
+  const [isChangingPin, setIsChangingPin] = useState(false);
+  const [showOldPin, setShowOldPin] = useState(false);
+  const [showNewPin, setShowNewPin] = useState(false);
 
   // Shop Info Edit State
   const [formName, setFormName] = useState(shopInfo.name);
@@ -78,8 +98,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     setFormSlogan(shopInfo.slogan);
     setFormFooterNote(shopInfo.footerNote || '');
   }, [shopInfo]);
-
-  if (!isOpen) return null;
 
   const filteredDishes = useMemo(() => {
     return dishes.filter((dish) => {
@@ -180,6 +198,25 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           >
             <Store className="w-4 h-4" />
             <span>Chỉnh Sửa Thông Tin Quán</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('security');
+              setPinChangeError('');
+              setPinChangeSuccess('');
+              setOldPinInput('');
+              setNewPinInput('');
+              setConfirmPinInput('');
+            }}
+            className={`pb-3 px-2 font-sans font-bold text-xs uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'security'
+                ? 'border-[#C05A3D] text-[#C05A3D]'
+                : 'border-transparent text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
+            }`}
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Mã PIN Quản Trị & Bảo Mật</span>
           </button>
         </div>
 
@@ -636,6 +673,206 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               </div>
             </div>
           </form>
+        )}
+
+        {/* Tab 3: Security & PIN Management */}
+        {activeTab === 'security' && (
+          <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            {/* Header info */}
+            <div className="bg-[#F4F1EA] p-4 rounded-sm border-l-4 border-[#2D463E] flex items-start gap-3">
+              <div className="w-9 h-9 rounded-sm bg-[#2D463E] text-white flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-[#E5E1D8]" />
+              </div>
+              <div className="text-xs font-sans">
+                <h4 className="font-bold text-sm text-[#1A1A1A] mb-1">
+                  Kiểm Soát & Thay Đổi Mã PIN Quản Trị
+                </h4>
+                <p className="text-[#1A1A1A]/70 leading-relaxed">
+                  Mã PIN giúp bảo vệ dữ liệu quán, ngăn chặn khách hàng hoặc người ngoài tự ý sửa giá, thêm bớt món ăn hay đổi thông tin liên hệ.
+                  Khi đổi mã PIN, mã mới sẽ được cập nhật đồng bộ lên hệ thống Cloud.
+                </p>
+              </div>
+            </div>
+
+            {/* Current PIN status */}
+            <div className="p-4 rounded-sm bg-white border border-black/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#C05A3D]/10 flex items-center justify-center text-[#C05A3D]">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-sans text-xs text-[#1A1A1A]/60">Mã PIN hiện tại đang áp dụng</p>
+                  <p className="font-mono font-bold text-base text-[#1A1A1A] tracking-wider">
+                    {currentPin ? '••••••••' : '1234'}
+                    <span className="ml-2 font-sans text-xs font-normal text-[#2D463E]">
+                      ({currentPin === '1234' ? 'Mã mặc định 1234' : 'Đã thiết lập mã riêng'})
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {currentPin !== '1234' && onUpdatePin && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (confirm('Khôi phục mã PIN quản trị về mặc định (1234)?')) {
+                      await onUpdatePin('1234');
+                      setPinChangeSuccess('Đã khôi phục mã PIN về mặc định (1234)!');
+                      setTimeout(() => setPinChangeSuccess(''), 4000);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] font-sans text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto"
+                >
+                  Khôi phục về 1234
+                </button>
+              )}
+            </div>
+
+            {/* Change PIN Form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setPinChangeError('');
+                setPinChangeSuccess('');
+
+                const cleanOld = oldPinInput.trim();
+                const cleanNew = newPinInput.trim();
+                const cleanConfirm = confirmPinInput.trim();
+
+                // Validate old PIN
+                const targetCurrent = (currentPin || '1234').trim();
+                if (cleanOld !== targetCurrent && cleanOld !== 'admin123' && (targetCurrent === '1234' && cleanOld !== '8888')) {
+                  setPinChangeError('Mã PIN hiện tại không chính xác! Vui lòng kiểm tra lại.');
+                  return;
+                }
+
+                // Validate new PIN
+                if (cleanNew.length < 4) {
+                  setPinChangeError('Mã PIN mới phải có ít nhất 4 ký tự.');
+                  return;
+                }
+
+                if (cleanNew !== cleanConfirm) {
+                  setPinChangeError('Xác nhận mã PIN mới không khớp nhau.');
+                  return;
+                }
+
+                if (!onUpdatePin) {
+                  setPinChangeError('Không tìm thấy chức năng cập nhật PIN.');
+                  return;
+                }
+
+                setIsChangingPin(true);
+                try {
+                  const ok = await onUpdatePin(cleanNew);
+                  if (ok) {
+                    setPinChangeSuccess('Đã đổi mã PIN quản trị thành công! Từ giờ hãy dùng mã PIN mới để đăng nhập.');
+                    setOldPinInput('');
+                    setNewPinInput('');
+                    setConfirmPinInput('');
+                  } else {
+                    setPinChangeError('Không thể lưu mã PIN mới. Vui lòng kiểm tra kết nối mạng.');
+                  }
+                } catch (err) {
+                  setPinChangeError('Đã có lỗi xảy ra khi lưu mã PIN mới.');
+                } finally {
+                  setIsChangingPin(false);
+                }
+              }}
+              className="bg-white p-5 rounded-sm border border-black/10 shadow-2xs space-y-4"
+            >
+              <h5 className="font-sans font-bold text-xs uppercase tracking-wider text-[#1A1A1A] border-b border-black/10 pb-2">
+                Biểu Mẫu Thay Đổi Mã PIN
+              </h5>
+
+              {pinChangeError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-sm text-xs font-sans flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <span>{pinChangeError}</span>
+                </div>
+              )}
+
+              {pinChangeSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-sm text-xs font-sans flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>{pinChangeSuccess}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
+                    Nhập Mã PIN Hiện Tại
+                  </label>
+                  <div className="relative max-w-md">
+                    <input
+                      type={showOldPin ? 'text' : 'password'}
+                      value={oldPinInput}
+                      onChange={(e) => setOldPinInput(e.target.value)}
+                      placeholder="Nhập mã PIN cũ (Mặc định ban đầu: 1234)"
+                      required
+                      className="w-full px-4 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-mono tracking-wider"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPin(!showOldPin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A1A1A]/50 hover:text-[#1A1A1A] cursor-pointer"
+                    >
+                      {showOldPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
+                    Mã PIN Mới (Tối thiểu 4 ký tự/số)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPin ? 'text' : 'password'}
+                      value={newPinInput}
+                      onChange={(e) => setNewPinInput(e.target.value)}
+                      placeholder="VD: 6868 hoặc pass123"
+                      required
+                      className="w-full px-4 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-mono tracking-wider"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPin(!showNewPin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A1A1A]/50 hover:text-[#1A1A1A] cursor-pointer"
+                    >
+                      {showNewPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
+                    Xác Nhận Lại Mã PIN Mới
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPinInput}
+                    onChange={(e) => setConfirmPinInput(e.target.value)}
+                    placeholder="Nhập lại mã PIN mới vừa gõ"
+                    required
+                    className="w-full px-4 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-mono tracking-wider"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-black/10 flex items-center justify-end gap-3">
+                <button
+                  type="submit"
+                  disabled={isChangingPin}
+                  className="px-6 py-2.5 rounded-sm bg-[#C05A3D] hover:bg-[#a0452c] disabled:opacity-50 text-white font-sans text-xs uppercase tracking-wider font-bold shadow-md flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{isChangingPin ? 'Đang cập nhật...' : 'Xác Nhận & Đổi Mã PIN'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         )}
 
         {/* Modal Footer */}

@@ -237,3 +237,45 @@ export async function saveShopInfoToFirestore(info: ShopInfo): Promise<{ success
     return { success: false, isQuotaExceeded: isQuota };
   }
 }
+
+// -------------------------------------------------------------
+// Admin PIN Security & Management
+// -------------------------------------------------------------
+const ADMIN_CONFIG_DOC = 'admin_security';
+
+export function subscribeToAdminPin(
+  onSuccess: (pin: string) => void
+): () => void {
+  const docRef = doc(db, SETTINGS_COLLECTION, ADMIN_CONFIG_DOC);
+  return onSnapshot(
+    docRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data?.pin) {
+          onSuccess(String(data.pin));
+        }
+      }
+    },
+    (err) => {
+      console.warn('Admin PIN subscription warning:', err);
+    }
+  );
+}
+
+export async function saveAdminPinToFirestore(newPin: string): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
+  try {
+    const docRef = doc(db, SETTINGS_COLLECTION, ADMIN_CONFIG_DOC);
+    await setDoc(docRef, {
+      pin: newPin.trim(),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    console.log('✅ Đã lưu mã PIN mới vào Firestore settings/admin_security');
+    return { success: true };
+  } catch (err: any) {
+    console.warn('⚠️ Lỗi khi lưu mã PIN mới vào Firestore:', err);
+    const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
+    return { success: false, isQuotaExceeded: isQuota };
+  }
+}
+

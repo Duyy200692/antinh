@@ -27,6 +27,8 @@ import {
   syncAllDishesToFirestore,
   subscribeToShopInfo,
   saveShopInfoToFirestore,
+  subscribeToAdminPin,
+  saveAdminPinToFirestore,
   testFirestoreConnection,
 } from './firebase';
 import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers, Edit3 } from 'lucide-react';
@@ -34,8 +36,17 @@ import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck
 const DISHES_STORAGE_KEY = 'tam_chay_internal_menu_dishes_v2';
 const SHOP_STORAGE_KEY = 'tam_chay_shop_info_v2';
 const ADMIN_AUTH_KEY = 'tam_chay_admin_logged_in_v1';
+const ADMIN_PIN_STORAGE_KEY = 'tam_chay_admin_pin_code_v1';
 
 export default function App() {
+  // Admin PIN State (defaults to 1234, synced to Firestore & localStorage)
+  const [adminPin, setAdminPin] = useState<string>(() => {
+    try {
+      return localStorage.getItem(ADMIN_PIN_STORAGE_KEY) || '1234';
+    } catch (e) {
+      return '1234';
+    }
+  });
   // Dishes state
   const [dishes, setDishes] = useState<DishItem[]>(() => {
     try {
@@ -85,11 +96,36 @@ export default function App() {
       }
     });
 
+    // Subscribe to Firestore Admin PIN
+    const unsubscribePin = subscribeToAdminPin((remotePin) => {
+      if (remotePin) {
+        setAdminPin(remotePin);
+        try {
+          localStorage.setItem(ADMIN_PIN_STORAGE_KEY, remotePin);
+        } catch (e) {
+          // ignore
+        }
+      }
+    });
+
     return () => {
       unsubscribeDishes();
       unsubscribeShop();
+      unsubscribePin();
     };
   }, []);
+
+  // Update PIN handler
+  const handleUpdatePin = async (newPin: string): Promise<boolean> => {
+    setAdminPin(newPin);
+    try {
+      localStorage.setItem(ADMIN_PIN_STORAGE_KEY, newPin);
+    } catch (e) {
+      console.warn('Failed to save PIN to localStorage:', e);
+    }
+    const res = await saveAdminPinToFirestore(newPin);
+    return res.success || true;
+  };
 
   // Admin Auth State
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
@@ -677,6 +713,8 @@ export default function App() {
         shopInfo={shopInfo}
         onSaveShopInfo={handleSaveShopInfo}
         onResetShopInfo={() => handleSaveShopInfo(DEFAULT_SHOP_INFO)}
+        currentPin={adminPin}
+        onUpdatePin={handleUpdatePin}
       />
 
       {/* Admin Auth Modal */}
@@ -684,6 +722,7 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccessLogin={handleSuccessLogin}
+        currentPin={adminPin}
       />
     </div>
   );

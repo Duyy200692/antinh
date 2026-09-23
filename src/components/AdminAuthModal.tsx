@@ -5,12 +5,14 @@ interface AdminAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccessLogin: () => void;
+  currentPin?: string;
 }
 
 export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   isOpen,
   onClose,
   onSuccessLogin,
+  currentPin = '1234',
 }) => {
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -20,13 +22,16 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Default admin PIN: 1234
-    if (pin.trim() === '1234' || pin.trim() === 'admin123' || pin.trim() === '8888') {
+    const cleanInput = pin.trim();
+    const targetPin = (currentPin || '1234').trim();
+
+    // Verify against current custom PIN or emergency master fallback
+    if (cleanInput === targetPin || cleanInput === 'admin123' || (targetPin === '1234' && cleanInput === '8888')) {
       setErrorMsg('');
       setPin('');
       onSuccessLogin();
     } else {
-      setErrorMsg('Mật khẩu PIN không chính xác! Vui lòng thử lại (Mật khẩu mặc định: 1234)');
+      setErrorMsg('Mật khẩu PIN không chính xác! Vui lòng thử lại.');
     }
   };
 
@@ -97,7 +102,11 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               </button>
             </div>
             <p className="text-[11px] text-[#1A1A1A]/50 font-sans mt-1">
-              * Mã PIN mặc định cho nhân viên bếp: <strong className="text-[#C05A3D]">1234</strong>
+              {currentPin === '1234' ? (
+                <>* Mã PIN mặc định cho nhân viên bếp: <strong className="text-[#C05A3D]">1234</strong></>
+              ) : (
+                <>* Quán đã bật mã PIN bảo mật riêng. Vui lòng nhập đúng mã đã thiết lập.</>
+              )}
             </p>
           </div>
 

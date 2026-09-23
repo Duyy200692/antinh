@@ -46,21 +46,25 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="relative sm:sticky top-0 z-30 bg-[#FDFCFB] text-[#1A1A1A] shadow-xs border-b border-black/10">
       {/* Top Admin Banner Status */}
       {isAdminLoggedIn ? (
-        <div className="bg-[#2D463E] text-white text-xs py-1.5 px-3 sm:px-4 border-b border-black/10">
+        <div 
+          onClick={onOpenAdminModal}
+          className="bg-[#2D463E] text-white text-xs py-1.5 px-3 sm:px-4 border-b border-black/10 hover:bg-[#1f332d] transition-colors cursor-pointer"
+          title="Bấm để mở bảng quản trị"
+        >
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 font-sans truncate">
               <UserCheck className="w-3.5 h-3.5 text-[#C05A3D] shrink-0" />
               <span className="font-bold text-[#E5E1D8] text-[11px] sm:text-xs truncate">
-                🔑 Chế độ Admin Bếp (Sửa món/báo hết)
+                🔑 Chế độ Admin Bếp (Sửa món/báo hết) — Bấm để mở bảng quản trị
               </span>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={onOpenShopInfoModal}
                 className="px-2 py-0.5 rounded bg-[#E5E1D8]/20 hover:bg-[#C05A3D] text-white font-sans text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1"
                 title="Sửa nhanh thông tin quán"
               >
-                <Edit3 className="w-3 h-3 text-[#C05A3D] group-hover:text-white" />
+                <Edit3 className="w-3 h-3 text-[#C05A3D]" />
                 <span>Sửa TT Quán</span>
               </button>
               <button
@@ -80,7 +84,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       ) : (
-        <div className="bg-[#F4F1EA] text-xs py-1 sm:py-1.5 px-3 sm:px-4 border-b border-black/5">
+        <div 
+          onClick={onOpenAuthModal}
+          className="bg-[#F4F1EA] hover:bg-[#eae5d8] text-xs py-1 sm:py-1.5 px-3 sm:px-4 border-b border-black/5 transition-colors cursor-pointer"
+          title="Bấm để đăng nhập quản trị"
+        >
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-[#1A1A1A]/80 truncate">
               <span className="inline-block w-2 h-2 rounded-full bg-[#C05A3D] animate-pulse shrink-0" />
@@ -90,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
                 LH: {shopInfo.contactPerson} ({shopInfo.phone})
               </span>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={onOpenShopInfoModal}
                 className="flex items-center gap-1 text-[#C05A3D] hover:text-[#A0452C] transition-colors text-[11px] sm:text-xs font-semibold uppercase tracking-wider cursor-pointer"
