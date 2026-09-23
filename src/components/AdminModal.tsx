@@ -741,7 +741,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                 // Validate old PIN
                 const targetCurrent = (currentPin || '1234').trim();
-                if (cleanOld !== targetCurrent && cleanOld !== 'admin123' && (targetCurrent === '1234' && cleanOld !== '8888')) {
+                if (cleanOld !== targetCurrent) {
                   setPinChangeError('Mã PIN hiện tại không chính xác! Vui lòng kiểm tra lại.');
                   return;
                 }

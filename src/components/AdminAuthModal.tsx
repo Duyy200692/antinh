@@ -25,8 +25,8 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     const cleanInput = pin.trim();
     const targetPin = (currentPin || '1234').trim();
 
-    // Verify against current custom PIN or emergency master fallback
-    if (cleanInput === targetPin || cleanInput === 'admin123' || (targetPin === '1234' && cleanInput === '8888')) {
+    // Verify against current active PIN
+    if (cleanInput === targetPin) {
       setErrorMsg('');
       setPin('');
       onSuccessLogin();
@@ -88,7 +88,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   setPin(e.target.value);
                   setErrorMsg('');
                 }}
-                placeholder="Nhập mã PIN (Mặc định: 1234)"
+                placeholder="Nhập mã PIN quản trị"
                 autoFocus
                 required
                 className="w-full pl-10 pr-10 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/15 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-mono tracking-widest"
@@ -103,9 +103,9 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
             </div>
             <p className="text-[11px] text-[#1A1A1A]/50 font-sans mt-1">
               {currentPin === '1234' ? (
-                <>* Mã PIN mặc định cho nhân viên bếp: <strong className="text-[#C05A3D]">1234</strong></>
+                <>* Nhập mã PIN quản lý để truy cập (mặc định: <strong className="text-[#C05A3D]">1234</strong>)</>
               ) : (
-                <>* Quán đã bật mã PIN bảo mật riêng. Vui lòng nhập đúng mã đã thiết lập.</>
+                <>* Nhập mã PIN quản lý của quán.</>
               )}
             </p>
           </div>
