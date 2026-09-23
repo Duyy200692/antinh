@@ -1,16 +1,35 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --font-grab: 'Inter', 'Plus Jakarta Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
   body {
-    font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-grab);
     background-color: #FDFCFB;
     color: #1A1A1A;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
 
-  h1, h2, h3, h4, .font-serif {
-    font-family: 'Playfair Display', 'Be Vietnam Pro', serif;
+  /* Thay thế toàn bộ font có chân/serif cũ sang font chuẩn Grab siêu nét, hiện đại */
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: var(--font-grab) !important;
+    letter-spacing: -0.02em;
+  }
+
+  /* Định dạng font sans đồng bộ */
+  .font-sans {
+    font-family: var(--font-grab);
+  }
+
+  /* Font số tiền, mã món sắc nét */
+  button, input, textarea, select {
+    font-family: var(--font-grab);
   }
 }
 
@@ -27,3 +46,4 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
