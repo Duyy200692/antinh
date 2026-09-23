@@ -181,6 +181,40 @@ export default function App() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
+  // Lock body scroll when any modal is open on mobile
+  useEffect(() => {
+    const isAnyModalOpen =
+      !!selectedDishForDetail ||
+      isAddModalOpen ||
+      isShopInfoModalOpen ||
+      isWeeklyOverviewModalOpen ||
+      isAdminModalOpen ||
+      isAuthModalOpen;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [
+    selectedDishForDetail,
+    isAddModalOpen,
+    isShopInfoModalOpen,
+    isWeeklyOverviewModalOpen,
+    isAdminModalOpen,
+    isAuthModalOpen,
+  ]);
+
   // Day selection change handler
   const handleSelectDay = (day: DayOfWeek | 'today') => {
     setSelectedDay(day);
