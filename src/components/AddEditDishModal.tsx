@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DishItem, DayOfWeek, DishCategory } from '../types';
 import { DAYS_OF_WEEK, CATEGORIES } from '../data/mockDishes';
 import { X, Save, Plus, Trash2, Check, Sparkles, Upload, Loader2, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
-import { compressImageToWebp, uploadWebpImageToFirebase } from '../utils/imageUtils';
+import { compressImageToWebp, uploadWebpImageToFirebase, getLocalImagePreviewUrl } from '../utils/imageUtils';
 
 interface AddEditDishModalProps {
   isOpen: boolean;
@@ -93,19 +93,24 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
       alert('Vui lòng chọn một tập tin hình ảnh hợp lệ.');
       return;
     }
+
+    // Instant local preview so user sees the image right away without waiting!
+    const localPreview = getLocalImagePreviewUrl(file);
+    setImage(localPreview);
     setIsUploadingImage(true);
     setWebpStats(null);
+
     try {
-      // Automatically compress & convert to .webp format
-      const { webpDataUrl, originalSize, compressedSize } = await compressImageToWebp(file, 1200, 0.82);
+      // Fast client-side compression to lightweight .WEBP (max 720px, ~30-50KB)
+      const { webpDataUrl, originalSize, compressedSize } = await compressImageToWebp(file, 720, 0.75);
       setWebpStats({ orig: originalSize, comp: compressedSize });
 
-      // Upload to Firebase Storage or fall back seamlessly to compressed .webp Data URL
+      // Fast upload to Firebase Storage or seamless fallback to lightweight WebP data URL
       const finalUrl = await uploadWebpImageToFirebase(webpDataUrl, 'menu_dishes');
       setImage(finalUrl);
     } catch (err) {
-      console.error('Lỗi nén và tải ảnh .webp:', err);
-      alert('Có lỗi khi nén ảnh sang định dạng .webp. Vui lòng thử lại.');
+      console.error('Lỗi xử lý ảnh:', err);
+      // Keep local preview if compression errored
     } finally {
       setIsUploadingImage(false);
     }
@@ -369,7 +374,7 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
                     {isUploadingImage ? (
                       <span className="inline-flex items-center gap-1.5 text-[#C05A3D]">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Đang xử lý nén sang chuẩn .WEBP & lưu Firebase...
+                        Đang tối ưu ảnh siêu tốc sang .WEBP...
                       </span>
                     ) : (
                       'Bấm hoặc kéo thả ảnh món ăn vào đây để tải lên'
