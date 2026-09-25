@@ -50,6 +50,11 @@ export function filterDishes(
   const targetDay = selectedDay === 'today' ? getTodayDayOfWeek() : selectedDay;
 
   return dishes.filter((dish) => {
+    // Sticky rice dishes are separate items and are not counted in regular daily menu
+    if (dish.category === 'sticky_rice_bread') {
+      return false;
+    }
+
     // Check day availability:
     const matchesDay =
       targetDay === 'all'
@@ -105,6 +110,9 @@ export function getDishesCountByDay(dishes: DishItem[]): Record<string, number> 
   const today = getTodayDayOfWeek();
 
   dishes.forEach((dish) => {
+    // Exclude sticky rice dishes from regular menu counts
+    if (dish.category === 'sticky_rice_bread') return;
+
     // Check if available today
     if (dish.availableDays.includes(today) || dish.availableDays.includes('all')) {
       counts['today'] = (counts['today'] || 0) + 1;
@@ -134,11 +142,12 @@ export function getCategoryCounts(
 ): Record<string, number> {
   const targetDay = selectedDay === 'today' ? getTodayDayOfWeek() : selectedDay;
 
-  const dayDishes = dishes.filter((dish) =>
-    targetDay === 'all'
+  const dayDishes = dishes.filter((dish) => {
+    if (dish.category === 'sticky_rice_bread') return false;
+    return targetDay === 'all'
       ? dish.availableDays.includes('all')
-      : dish.availableDays.includes(targetDay) || dish.availableDays.includes('all')
-  );
+      : dish.availableDays.includes(targetDay) || dish.availableDays.includes('all');
+  });
 
   const counts: Record<string, number> = {
     all_categories: dayDishes.length,

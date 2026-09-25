@@ -15,7 +15,6 @@ export const CATEGORIES: CategoryConfig[] = [
   { id: 'all_categories', label: 'Tất cả danh mục', iconName: 'LayoutGrid', colorClass: 'bg-emerald-800 text-white' },
   { id: 'daily_main', label: 'Món chính theo ngày', iconName: 'Utensils', colorClass: 'bg-amber-600 text-white' },
   { id: 'ready_made', label: 'Món chay làm sẵn', iconName: 'PackageCheck', colorClass: 'bg-emerald-700 text-white' },
-  { id: 'sticky_rice_bread', label: 'Xôi & Bánh mì chay', iconName: 'Wheat', colorClass: 'bg-orange-600 text-white' },
   { id: 'cereal_cake', label: 'Bánh hạt ngũ cốc', iconName: 'Cookie', colorClass: 'bg-rose-700 text-white' },
 ];
 
@@ -160,6 +159,8 @@ export const INITIAL_DISHES: DishItem[] = [
     tags: ['Xôi Nếp Cái Hoa Vàng', 'Xôi Bắp', 'Bán chạy'],
     prepTime: '5 phút (nhận đặt sỉ)',
     isFeatured: true,
+    bulkOrderOnly: true,
+    orderStatusBadge: 'Chỉ nhận đặt số lượng lớn (từ 10 phần)',
   },
   {
     id: 'xoi-02',
@@ -173,6 +174,8 @@ export const INITIAL_DISHES: DishItem[] = [
     isAvailableToday: true,
     tags: ['Xôi Vò', 'Nếp Cái Hoa Vàng'],
     prepTime: '5 phút (nhận đặt sỉ)',
+    bulkOrderOnly: true,
+    orderStatusBadge: 'Chỉ nhận đặt số lượng lớn (từ 10 phần)',
   },
   {
     id: 'xoi-03',
@@ -186,6 +189,8 @@ export const INITIAL_DISHES: DishItem[] = [
     isAvailableToday: true,
     tags: ['Xôi Khúc', 'Đặc biệt'],
     prepTime: '5 phút (nhận đặt sỉ)',
+    bulkOrderOnly: true,
+    orderStatusBadge: 'Chỉ nhận đặt số lượng lớn (từ 10 phần)',
   },
   {
     id: 'xoi-04',
@@ -199,6 +204,8 @@ export const INITIAL_DISHES: DishItem[] = [
     isAvailableToday: true,
     tags: ['Xôi Gấc', 'Tài lộc', 'Nếp Cái Hoa Vàng'],
     prepTime: '5 phút (nhận đặt sỉ)',
+    bulkOrderOnly: true,
+    orderStatusBadge: 'Chỉ nhận đặt số lượng lớn (từ 10 phần)',
   },
   {
     id: 'bm-01',
@@ -213,6 +220,8 @@ export const INITIAL_DISHES: DishItem[] = [
     tags: ['Bánh Mì Xôi', 'Món lạ miệng', 'Bán chạy'],
     prepTime: '3 phút',
     isFeatured: true,
+    bulkOrderOnly: true,
+    orderStatusBadge: 'Chỉ nhận đặt số lượng lớn (từ 10 phần)',
   },
   {
     id: 'bm-02',
@@ -226,6 +235,8 @@ export const INITIAL_DISHES: DishItem[] = [
     isAvailableToday: true,
     tags: ['Bánh Mì Chay', 'Giòn nóng'],
     prepTime: '3 phút',
+    bulkOrderOnly: true,
+    orderStatusBadge: 'Chỉ nhận đặt số lượng lớn (từ 10 phần)',
   },
 
   // ==========================================

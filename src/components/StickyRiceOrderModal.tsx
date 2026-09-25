@@ -76,6 +76,7 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
   const [editDishPrepTime, setEditDishPrepTime] = useState('');
   const [editDishImage, setEditDishImage] = useState('');
   const [editDishAvail, setEditDishAvail] = useState(true);
+  const [editDishStatusBadge, setEditDishStatusBadge] = useState('');
 
   // Customer order quantities state (e.g. { 'xoi-01': 2 })
   const [orderCart, setOrderCart] = useState<Record<string, number>>({});
@@ -129,6 +130,7 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
     setEditDishPrepTime(dish.prepTime || '5 phút');
     setEditDishImage(dish.image);
     setEditDishAvail(dish.isAvailableToday);
+    setEditDishStatusBadge(dish.orderStatusBadge || 'Chỉ nhận đặt số lượng lớn (từ 10 phần)');
   };
 
   // Save inline edited dish
@@ -142,6 +144,8 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
       prepTime: editDishPrepTime.trim() || originalDish.prepTime,
       image: editDishImage.trim() || originalDish.image,
       isAvailableToday: editDishAvail,
+      orderStatusBadge: editDishStatusBadge.trim(),
+      bulkOrderOnly: true,
     };
     onSaveDish(updatedDish);
     setEditingDishId(null);
@@ -561,6 +565,12 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
                               <p className="text-[11px] text-[#1A1A1A]/70 line-clamp-2 mt-1 leading-relaxed">
                                 {dish.description}
                               </p>
+
+                              {dish.orderStatusBadge && (
+                                <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-sans font-bold">
+                                  <span>📦 {dish.orderStatusBadge}</span>
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-2 mt-1 text-[10px] text-[#1A1A1A]/60 font-sans">
@@ -715,6 +725,36 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
                                 <option value="true">Đang có sẵn</option>
                                 <option value="false">Tạm hết</option>
                               </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block font-bold text-[#1A1A1A] mb-0.5">Trạng thái đặt hàng / Số lượng lớn:</label>
+                            <input
+                              type="text"
+                              value={editDishStatusBadge}
+                              onChange={(e) => setEditDishStatusBadge(e.target.value)}
+                              placeholder="VD: Chỉ nhận đặt số lượng lớn (từ 10 phần)"
+                              className="w-full px-2.5 py-1.5 rounded-md bg-white border border-black/20 focus:ring-1 focus:ring-[#C05A3D] text-xs font-semibold text-amber-900"
+                            />
+                            {/* Quick Status Presets for Pre-ordered / Bulk items */}
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              <span className="text-[10px] text-gray-500 self-center">Gợi ý trạng thái đặt trước:</span>
+                              {[
+                                'Chỉ nhận đặt số lượng lớn (từ 10 phần)',
+                                'Cần đặt trước (trước 1 ngày)',
+                                'Nhận đặt tiệc & cúng rằm',
+                                'Mở đơn đặt ăn sáng hàng ngày',
+                              ].map((preset, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => setEditDishStatusBadge(preset)}
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold cursor-pointer transition-colors"
+                                >
+                                  {preset}
+                                </button>
+                              ))}
                             </div>
                           </div>
 

@@ -27,6 +27,8 @@ export interface DishItem {
   prepTime: string;
   prepTimeEn?: string;
   isFeatured?: boolean;
+  bulkOrderOnly?: boolean; // True if this sticky rice item is for bulk orders only
+  orderStatusBadge?: string; // e.g. "Chỉ nhận đặt số lượng lớn (từ 10 phần)"
 }
 
 export interface ShopInfo {
