@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Phone, MapPin, Clock, ShieldCheck, HeartHandshake, Info, Edit3, Save, CheckCircle2 } from 'lucide-react';
+import React from 'react';
+import { X, Phone, MapPin, Clock, ShieldCheck, Info } from 'lucide-react';
 import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
 import { ShopInfo, Language } from '../types';
 import { TRANSLATIONS, getLocalizedShopInfo } from '../utils/i18n';
@@ -19,65 +19,14 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
   isOpen,
   onClose,
   shopInfo = DEFAULT_SHOP_INFO,
-  onSaveShopInfo,
+  onOpenAdminModal,
   isAdminLoggedIn = false,
-  onOpenAuthModal,
   language = 'vi' as Language,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [formName, setFormName] = useState(shopInfo.name);
-  const [formAddress, setFormAddress] = useState(shopInfo.address);
-  const [formPhone, setFormPhone] = useState(shopInfo.phone);
-  const [formContactPerson, setFormContactPerson] = useState(shopInfo.contactPerson);
-  const [formOpenHours, setFormOpenHours] = useState(shopInfo.openHours);
-  const [formSlogan, setFormSlogan] = useState(shopInfo.slogan);
-  const [formFooterNote, setFormFooterNote] = useState(shopInfo.footerNote || '');
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
   const t = TRANSLATIONS[language];
   const localizedInfo = getLocalizedShopInfo(shopInfo, language);
 
-  // Sync state when shopInfo changes or modal opens
-  React.useEffect(() => {
-    setFormName(shopInfo.name);
-    setFormAddress(shopInfo.address);
-    setFormPhone(shopInfo.phone);
-    setFormContactPerson(shopInfo.contactPerson);
-    setFormOpenHours(shopInfo.openHours);
-    setFormSlogan(shopInfo.slogan);
-    setFormFooterNote(shopInfo.footerNote || '');
-  }, [shopInfo, isOpen]);
-
   if (!isOpen) return null;
-
-  const handleStartEdit = () => {
-    if (!isAdminLoggedIn && onOpenAuthModal) {
-      onOpenAuthModal();
-      return;
-    }
-    setIsEditing(true);
-  };
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onSaveShopInfo) {
-      onSaveShopInfo({
-        ...shopInfo,
-        name: formName,
-        address: formAddress,
-        phone: formPhone,
-        contactPerson: formContactPerson,
-        openHours: formOpenHours,
-        slogan: formSlogan,
-        footerNote: formFooterNote,
-      });
-    }
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setSaveSuccess(false);
-      setIsEditing(false);
-    }, 1500);
-  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -85,23 +34,24 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
         {/* Header */}
         <div className="bg-[#F4F1EA] px-6 py-5 border-b border-black/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#E5E1D8] flex items-center justify-center text-[#C05A3D] text-lg font-bold">
-              🪷
+            <div className="w-11 h-11 rounded-full bg-[#E5E1D8] flex items-center justify-center text-[#C05A3D] text-lg font-bold overflow-hidden border border-black/10 shrink-0">
+              {shopInfo.logoUrl ? (
+                <img src={shopInfo.logoUrl} alt={localizedInfo.name} className="w-full h-full object-cover" />
+              ) : (
+                <span>🪷</span>
+              )}
             </div>
             <div>
               <h2 className="font-serif text-xl font-bold uppercase tracking-tight text-[#1A1A1A]">
                 {localizedInfo.name}
               </h2>
               <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-[#C05A3D] font-bold">
-                {isEditing ? t.editShopInfoBtn : t.shopInfoSubtitle}
+                {t.shopInfoSubtitle}
               </p>
             </div>
           </div>
           <button
-            onClick={() => {
-              setIsEditing(false);
-              onClose();
-            }}
+            onClick={onClose}
             className="w-8 h-8 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] flex items-center justify-center text-[#1A1A1A] transition-colors cursor-pointer"
             aria-label={t.closeBtn}
           >
@@ -110,206 +60,91 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
         </div>
 
         {/* Body */}
-        {isEditing ? (
-          <form onSubmit={handleSave} className="p-6 space-y-4">
-            {saveSuccess && (
-              <div className="p-3 bg-[#2D463E] text-white rounded-sm text-xs font-sans font-bold flex items-center gap-2 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-[#E5E1D8]" />
-                <span>Đã lưu và đồng bộ lên Firebase Cloud thành công!</span>
+        <div className="p-6 space-y-6">
+          {/* Intro notice */}
+          <div className="bg-[#F4F1EA] p-4 rounded-sm border-l-2 border-[#C05A3D] flex items-start gap-3">
+            <Info className="w-5 h-5 text-[#C05A3D] shrink-0 mt-0.5" />
+            <p className="text-xs leading-relaxed text-[#1A1A1A]/80 font-sans">
+              {localizedInfo.slogan}
+            </p>
+          </div>
+
+          {/* Key Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5">
+              <div className="flex items-center gap-2 mb-2 text-xs font-sans uppercase tracking-wider font-bold text-[#C05A3D]">
+                <Clock className="w-4 h-4" />
+                <span>{t.shopHoursLabel}</span>
               </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                Tên Quán Chay *
-              </label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                required
-                className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-serif font-bold"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                  Người Phụ Trách
-                </label>
-                <input
-                  type="text"
-                  value={formContactPerson}
-                  onChange={(e) => setFormContactPerson(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                  Số Điện Thoại / Zalo
-                </label>
-                <input
-                  type="text"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                Giờ Mở Cửa Phục Vụ
-              </label>
-              <input
-                type="text"
-                value={formOpenHours}
-                onChange={(e) => setFormOpenHours(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                Địa Chỉ
-              </label>
-              <input
-                type="text"
-                value={formAddress}
-                onChange={(e) => setFormAddress(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                Lời Chào / Slogan
-              </label>
-              <textarea
-                rows={2}
-                value={formSlogan}
-                onChange={(e) => setFormSlogan(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                Dòng Chữ Chân Trang (Bản quyền / Note dưới cùng trang)
-              </label>
-              <input
-                type="text"
-                placeholder="VD: © 2026 AN TỊNH • Thực đơn món chay thanh tịnh..."
-                value={formFooterNote}
-                onChange={(e) => setFormFooterNote(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10">
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] text-xs font-sans uppercase tracking-wider font-bold cursor-pointer"
-              >
-                {t.cancelBtn}
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
-              >
-                <Save className="w-4 h-4 text-[#E5E1D8]" />
-                <span>{t.saveShopInfoBtn}</span>
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="p-6 space-y-6">
-            {/* Intro notice */}
-            <div className="bg-[#F4F1EA] p-4 rounded-sm border-l-2 border-[#C05A3D] flex items-start gap-3">
-              <Info className="w-5 h-5 text-[#C05A3D] shrink-0 mt-0.5" />
-              <p className="text-xs leading-relaxed text-[#1A1A1A]/80 font-sans">
-                {localizedInfo.slogan}
+              <p className="text-sm font-serif font-bold text-[#1A1A1A]">{localizedInfo.openHours}</p>
+              <p className="text-xs text-[#1A1A1A]/60 mt-1">
+                {language === 'en' ? 'Serving Monday - Sunday' : 'Phục vụ các ngày từ Thứ 2 - Chủ Nhật'}
               </p>
             </div>
 
-            {/* Key Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5">
-                <div className="flex items-center gap-2 mb-2 text-xs font-sans uppercase tracking-wider font-bold text-[#C05A3D]">
-                  <Clock className="w-4 h-4" />
-                  <span>{t.shopHoursLabel}</span>
-                </div>
-                <p className="text-sm font-serif font-bold text-[#1A1A1A]">{localizedInfo.openHours}</p>
-                <p className="text-xs text-[#1A1A1A]/60 mt-1">
-                  {language === 'en' ? 'Serving Monday - Sunday' : 'Phục vụ các ngày từ Thứ 2 - Chủ Nhật'}
-                </p>
+            <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5">
+              <div className="flex items-center gap-2 mb-2 text-xs font-sans uppercase tracking-wider font-bold text-[#2D463E]">
+                <Phone className="w-4 h-4" />
+                <span>{t.shopContactLabel}</span>
               </div>
-
-              <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5">
-                <div className="flex items-center gap-2 mb-2 text-xs font-sans uppercase tracking-wider font-bold text-[#2D463E]">
-                  <Phone className="w-4 h-4" />
-                  <span>{t.shopContactLabel}</span>
-                </div>
-                <p className="text-sm font-serif font-bold text-[#1A1A1A]">{localizedInfo.contactPerson}</p>
-                <p className="text-xs text-[#1A1A1A]/80 font-mono mt-1">{t.phonePrefix}: {localizedInfo.phone}</p>
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5 flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-[#C05A3D] shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-xs font-sans uppercase tracking-wider font-bold text-[#1A1A1A] mb-1">
-                  {t.shopAddressLabel}
-                </h3>
-                <p className="text-sm text-[#1A1A1A]/80 font-serif">{localizedInfo.address}</p>
-              </div>
-            </div>
-
-            {/* Highlights */}
-            <div className="border-t border-black/10 pt-4 space-y-3">
-              <h3 className="font-serif font-bold text-base text-[#1A1A1A] uppercase tracking-wide">
-                {t.shopHighlightsLabel}
-              </h3>
-
-              <div className="space-y-2 text-xs text-[#1A1A1A]/80">
-                {localizedInfo.features && localizedInfo.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#2D463E] shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm font-serif font-bold text-[#1A1A1A]">{localizedInfo.contactPerson}</p>
+              <p className="text-xs text-[#1A1A1A]/80 font-mono mt-1">{t.phonePrefix}: {localizedInfo.phone}</p>
             </div>
           </div>
-        )}
+
+          {/* Address */}
+          <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5 flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-[#C05A3D] shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-xs font-sans uppercase tracking-wider font-bold text-[#1A1A1A] mb-1">
+                {t.shopAddressLabel}
+              </h3>
+              <p className="text-sm text-[#1A1A1A]/80 font-serif">{localizedInfo.address}</p>
+            </div>
+          </div>
+
+          {/* Highlights */}
+          <div className="border-t border-black/10 pt-4 space-y-3">
+            <h3 className="font-serif font-bold text-base text-[#1A1A1A] uppercase tracking-wide">
+              {t.shopHighlightsLabel}
+            </h3>
+
+            <div className="space-y-2 text-xs text-[#1A1A1A]/80">
+              {localizedInfo.features && localizedInfo.features.map((feature, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#2D463E] shrink-0 mt-0.5" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Footer */}
-        {!isEditing && (
-          <div className="bg-[#F4F1EA] px-6 py-4 border-t border-black/10 flex items-center justify-between">
+        <div className="bg-[#F4F1EA] px-6 py-4 border-t border-black/10 flex items-center justify-between">
+          {isAdminLoggedIn && onOpenAdminModal ? (
             <button
               type="button"
-              onClick={handleStartEdit}
-              className="px-4 py-2 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white font-sans uppercase tracking-wider font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              onClick={() => {
+                onClose();
+                onOpenAdminModal();
+              }}
+              className="text-xs text-[#C05A3D] hover:underline font-sans font-semibold cursor-pointer"
             >
-              <Edit3 className="w-4 h-4 text-[#C05A3D]" />
-              <span>{t.editShopInfoBtn}</span>
+              {language === 'en' ? 'Edit details in Kitchen Admin →' : 'Chỉnh sửa thông tin trong Bảng Quản Trị Bếp →'}
             </button>
+          ) : (
+            <span />
+          )}
 
-            <button
-              onClick={onClose}
-              className="px-6 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white font-sans uppercase tracking-wider font-bold text-xs transition-colors cursor-pointer"
-            >
-              {t.closeBtn}
-            </button>
-          </div>
-        )}
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white font-sans uppercase tracking-wider font-bold text-xs transition-colors cursor-pointer"
+          >
+            {t.closeBtn}
+          </button>
+        </div>
       </div>
     </div>
   );
 };
-
-
-

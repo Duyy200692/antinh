@@ -105,6 +105,11 @@ export interface Translations {
   shopHoursLabel: string;
   shopContactLabel: string;
   shopHighlightsLabel: string;
+  shopLogoLabel: string;
+  uploadLogoBtn: string;
+  removeLogoBtn: string;
+  logoHelperText: string;
+  logoUrlPlaceholder: string;
   editShopInfoBtn: string;
   saveShopInfoBtn: string;
   cancelBtn: string;
@@ -214,6 +219,11 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     shopHoursLabel: 'Giờ mở cửa phục vụ:',
     shopContactLabel: 'Phụ trách quán:',
     shopHighlightsLabel: 'Đặc điểm quán chay:',
+    shopLogoLabel: 'Logo Quán / Thương hiệu',
+    uploadLogoBtn: 'Tải ảnh Logo lên',
+    removeLogoBtn: 'Gỡ Logo',
+    logoHelperText: 'Định dạng PNG, JPG, WebP. Hệ thống tự động nén & tối ưu sắc nét.',
+    logoUrlPlaceholder: 'Hoặc dán link ảnh Logo (https://...)',
     editShopInfoBtn: 'Chỉnh sửa thông tin',
     saveShopInfoBtn: 'Lưu thay đổi',
     cancelBtn: 'Hủy',
@@ -319,6 +329,11 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     shopHoursLabel: 'Opening Hours:',
     shopContactLabel: 'Contact Person:',
     shopHighlightsLabel: 'Specialty Highlights:',
+    shopLogoLabel: 'Shop / Brand Logo',
+    uploadLogoBtn: 'Upload Logo Image',
+    removeLogoBtn: 'Remove Logo',
+    logoHelperText: 'PNG, JPG, WebP supported. Automatically optimized for crisp quality.',
+    logoUrlPlaceholder: 'Or paste Logo image URL (https://...)',
     editShopInfoBtn: 'Edit Shop Info',
     saveShopInfoBtn: 'Save Changes',
     cancelBtn: 'Cancel',

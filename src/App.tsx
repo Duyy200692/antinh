@@ -32,7 +32,7 @@ import {
   saveAdminPinToFirestore,
   testFirestoreConnection,
 } from './firebase';
-import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers, Edit3, Info } from 'lucide-react';
+import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers, Info } from 'lucide-react';
 
 const DISHES_STORAGE_KEY = 'tam_chay_internal_menu_dishes_v2';
 const SHOP_STORAGE_KEY = 'tam_chay_shop_info_v2';
@@ -617,19 +617,18 @@ export default function App() {
             {/* Col 1: Shop Brand & Address */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🪷</span>
+                {shopInfo.logoUrl ? (
+                  <img
+                    src={shopInfo.logoUrl}
+                    alt={localizedShopInfo.name}
+                    className="w-8 h-8 rounded-full object-cover border border-black/10 shadow-xs shrink-0"
+                  />
+                ) : (
+                  <span className="text-2xl">🪷</span>
+                )}
                 <span className="font-serif font-black text-xl uppercase tracking-tighter text-[#1A1A1A]">
                   {localizedShopInfo.name}
                 </span>
-                {isAdminLoggedIn && (
-                  <button
-                    onClick={() => setIsShopInfoModalOpen(true)}
-                    className="p-1 rounded bg-[#E5E1D8] hover:bg-[#C05A3D] text-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
-                    title={t.editShopQuick}
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
-                )}
               </div>
               <p className="text-xs text-[#1A1A1A]/70 font-sans leading-relaxed max-w-sm mb-3">
                 {localizedShopInfo.slogan}
@@ -650,16 +649,6 @@ export default function App() {
                 <h4 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#C05A3D]">
                   {language === 'en' ? 'Contact & Orders' : 'Liên Hệ & Đặt Món'}
                 </h4>
-                {isAdminLoggedIn && (
-                  <button
-                    onClick={() => setIsShopInfoModalOpen(true)}
-                    className="px-2 py-0.5 rounded bg-[#E5E1D8] hover:bg-[#C05A3D] text-[#1A1A1A] hover:text-white transition-colors cursor-pointer text-[10px] font-sans font-bold uppercase tracking-wider flex items-center gap-1"
-                    title={t.editShopQuick}
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>{t.editShopQuick}</span>
-                  </button>
-                )}
               </div>
               <ul className="space-y-2 text-xs font-sans text-[#1A1A1A]/80">
                 <li>
@@ -762,16 +751,6 @@ export default function App() {
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-[#1A1A1A]/50">
             <p className="flex items-center gap-1.5 flex-wrap">
               <span>{localizedShopInfo.footerNote || (language === 'en' ? `© ${new Date().getFullYear()} ${localizedShopInfo.name} • Pure & Peaceful Vegetarian Menu` : `© ${new Date().getFullYear()} ${localizedShopInfo.name} • Thực đơn món chay thanh tịnh`)}</span>
-              {isAdminLoggedIn && (
-                <button
-                  onClick={() => setIsShopInfoModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/5 hover:bg-black/10 text-[#C05A3D] text-[10px] font-bold cursor-pointer transition-colors"
-                  title="Sửa dòng chữ chân trang"
-                >
-                  <Edit3 className="w-2.5 h-2.5" />
-                  <span>Sửa</span>
-                </button>
-              )}
             </p>
             <p className="italic">
               {language === 'en' ? 'Purity • Serenity • Wholesome Nutrition' : 'Thanh Tịnh • An Nhiên • Dinh Dưỡng'}

@@ -1,4 +1,4 @@
-import { DishItem, DayConfig, CategoryConfig } from '../types';
+import { DishItem, DayConfig, CategoryConfig, ShopInfo } from '../types';
 
 export const DAYS_OF_WEEK: DayConfig[] = [
   { id: 'all', label: 'Cố định cả tuần', shortLabel: 'Cả tuần', description: 'Các món chay làm sẵn & xôi bánh bán mỗi ngày' },
@@ -479,7 +479,7 @@ export const INITIAL_DISHES: DishItem[] = [
   },
 ];
 
-export const SHOP_INFO = {
+export const SHOP_INFO: ShopInfo = {
   name: 'AN TỊNH - MENU CHAY NỘI BỘ & ĐẶC SẢN CHAY',
   address: '121/7 (nhà sau) Lê Thị Riêng, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
   phone: '0909 310 567',
@@ -493,4 +493,5 @@ export const SHOP_INFO = {
     'Nhận đặt làm xôi & bánh mì số lượng lớn cho sự kiện, cúng rằm',
   ],
   footerNote: '© 2026 AN TỊNH • Thực đơn món chay thanh tịnh',
+  logoUrl: '',
 };

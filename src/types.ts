@@ -38,6 +38,7 @@ export interface ShopInfo {
   slogan: string;
   features: string[];
   footerNote?: string;
+  logoUrl?: string; // Brand logo image URL or compressed webp data URL
 }
 
 export interface DayConfig {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, PlusCircle, Calendar, Info, Sparkles, ShieldCheck, LogOut, UserCheck, Edit3 } from 'lucide-react';
+import { Search, PlusCircle, Calendar, Info, Sparkles, ShieldCheck, LogOut, UserCheck } from 'lucide-react';
 import { DayOfWeek, ShopInfo, Language } from '../types';
 import { getDayLabel, getTodayDayOfWeek } from '../utils/dayUtils';
 import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
@@ -68,14 +68,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
               <button
-                onClick={onOpenShopInfoModal}
-                className="px-2 py-0.5 rounded bg-[#E5E1D8]/20 hover:bg-[#C05A3D] text-white font-sans text-[10px] sm:text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
-                title={t.editShopQuick}
-              >
-                <Edit3 className="w-3 h-3 text-[#C05A3D]" />
-                <span className="hidden sm:inline">{t.editShopQuick}</span>
-              </button>
-              <button
                 onClick={onOpenAdminModal}
                 className="px-2.5 py-0.5 rounded bg-[#C05A3D] hover:bg-[#a0452c] text-white font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
               >
@@ -102,10 +94,18 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2.5 sm:gap-3.5">
               <button
                 onClick={onOpenShopInfoModal}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#E5E1D8] border border-black/10 flex items-center justify-center shadow-xs text-[#C05A3D] font-bold text-xl sm:text-2xl shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#E5E1D8] border border-black/10 flex items-center justify-center shadow-xs text-[#C05A3D] font-bold text-xl sm:text-2xl shrink-0 cursor-pointer hover:scale-105 transition-transform overflow-hidden"
                 title={t.shopInfoModalTitle}
               >
-                <span>🪷</span>
+                {shopInfo?.logoUrl ? (
+                  <img
+                    src={shopInfo.logoUrl}
+                    alt={localizedShop.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>🪷</span>
+                )}
               </button>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -116,22 +116,9 @@ export const Header: React.FC<HeaderProps> = ({
                   >
                     {localizedShop.name}
                   </h1>
-                  {isAdminLoggedIn ? (
-                    <button
-                      onClick={onOpenShopInfoModal}
-                      title={t.editShopQuick}
-                      className="p-1 rounded bg-[#F4F1EA] hover:bg-[#C05A3D] text-[#C05A3D] hover:text-white border border-black/10 transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span className="text-[10px] font-sans font-bold uppercase tracking-wider hidden sm:inline">
-                        {t.editShopQuick}
-                      </span>
-                    </button>
-                  ) : (
-                    <span className="font-sans text-[9px] sm:text-[10px] uppercase tracking-[0.15em] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm bg-[#2D463E] text-white shrink-0">
-                      {t.menuBadge}
-                    </span>
-                  )}
+                  <span className="font-sans text-[9px] sm:text-[10px] uppercase tracking-[0.15em] font-bold px-1.5 sm:px-2 py-0.5 rounded-sm bg-[#2D463E] text-white shrink-0">
+                    {t.menuBadge}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 font-sans text-[10px] sm:text-xs text-[#1A1A1A]/70 mt-0.5 flex-wrap">
                   <span className="font-medium tracking-wide">

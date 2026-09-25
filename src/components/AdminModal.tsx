@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { DishItem, ShopInfo, DishCategory } from '../types';
 import { CATEGORIES, DAYS_OF_WEEK } from '../data/mockDishes';
 import { getCategoryLabel, getDayLabel } from '../utils/dayUtils';
+import { compressImageToWebp, uploadWebpImageToFirebase } from '../utils/imageUtils';
 import {
   X,
   ShieldCheck,
@@ -24,6 +25,9 @@ import {
   Eye,
   EyeOff,
   Lock,
+  Upload,
+  Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
 
 interface AdminModalProps {
@@ -86,6 +90,9 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [formOpenHours, setFormOpenHours] = useState(shopInfo.openHours);
   const [formSlogan, setFormSlogan] = useState(shopInfo.slogan);
   const [formFooterNote, setFormFooterNote] = useState(shopInfo.footerNote || '');
+  const [formLogoUrl, setFormLogoUrl] = useState(shopInfo.logoUrl || '');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState('');
   const [shopSaveSuccess, setShopSaveSuccess] = useState(false);
 
   // Sync state when shopInfo changes
@@ -97,6 +104,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     setFormOpenHours(shopInfo.openHours);
     setFormSlogan(shopInfo.slogan);
     setFormFooterNote(shopInfo.footerNote || '');
+    setFormLogoUrl(shopInfo.logoUrl || '');
+    setLogoUploadError('');
   }, [shopInfo]);
 
   const filteredDishes = useMemo(() => {
@@ -122,6 +131,28 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     return dishes.filter((d) => !d.isAvailableToday).length;
   }, [dishes]);
 
+  const handleLogoUpload = async (file: File) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Vui lòng chọn một tập tin hình ảnh hợp lệ (PNG, JPG, WebP...).');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    setLogoUploadError('');
+
+    try {
+      const { webpDataUrl } = await compressImageToWebp(file, 384, 0.85);
+      setFormLogoUrl(webpDataUrl);
+      const finalUrl = await uploadWebpImageToFirebase(webpDataUrl, 'shop_logo');
+      setFormLogoUrl(finalUrl);
+    } catch (err: any) {
+      console.error('Lỗi khi tải logo:', err);
+      setLogoUploadError('Không thể xử lý ảnh, vui lòng thử ảnh khác');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   const handleSaveShopForm = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveShopInfo({
@@ -133,6 +164,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       openHours: formOpenHours,
       slogan: formSlogan,
       footerNote: formFooterNote,
+      logoUrl: formLogoUrl.trim() || undefined,
     });
     setShopSaveSuccess(true);
     setTimeout(() => setShopSaveSuccess(false), 2500);
@@ -527,6 +559,82 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 <span>Đã lưu thông tin quán mới thành công!</span>
               </div>
             )}
+
+            {/* Logo Quán */}
+            <div className="p-4 bg-[#F4F1EA] rounded-md border border-black/10 space-y-3">
+              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-[#C05A3D]" />
+                <span>Logo Thương Hiệu / Quán</span>
+              </label>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative group shrink-0">
+                  <div className="w-16 h-16 rounded-full bg-[#E5E1D8] border-2 border-black/10 flex items-center justify-center text-[#C05A3D] text-2xl font-bold overflow-hidden shadow-xs">
+                    {formLogoUrl ? (
+                      <img src={formLogoUrl} alt="Logo preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>🪷</span>
+                    )}
+                  </div>
+                  {isUploadingLogo && (
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-2 w-full">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label
+                      htmlFor="admin-shop-logo-upload"
+                      className="px-3.5 py-1.5 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#E5E1D8]" />
+                      <span>{isUploadingLogo ? 'Đang tải lên...' : 'Tải ảnh Logo lên'}</span>
+                    </label>
+                    <input
+                      id="admin-shop-logo-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingLogo}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoUpload(file);
+                      }}
+                    />
+
+                    {formLogoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormLogoUrl('')}
+                        className="px-3 py-1.5 rounded-sm bg-[#E5E1D8] hover:bg-red-50 text-red-600 hover:text-red-700 text-xs font-sans font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer border border-black/10"
+                        title="Gỡ Logo (Dùng hoa sen mặc định)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Gỡ Logo</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <input
+                    type="url"
+                    placeholder="Hoặc dán đường dẫn ảnh Logo (https://...)"
+                    value={formLogoUrl}
+                    onChange={(e) => setFormLogoUrl(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-sm bg-white border border-black/10 text-xs font-mono text-[#1A1A1A] placeholder-[#1A1A1A]/40 focus:outline-none focus:ring-1 focus:ring-[#C05A3D]"
+                  />
+
+                  <p className="text-[11px] text-[#1A1A1A]/60 font-sans">
+                    Định dạng PNG, JPG, WebP. Hệ thống tự động nén & tối ưu sắc nét để tải cực nhanh.
+                  </p>
+
+                  {logoUploadError && (
+                    <p className="text-[11px] text-red-600 font-sans font-bold">{logoUploadError}</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
