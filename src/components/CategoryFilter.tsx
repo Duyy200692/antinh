@@ -49,7 +49,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar -mx-1 px-1">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
-            const isBulkSpecial = cat.id === 'bulk_sticky_rice';
+            const isBulkSpecial = (cat.id as string) === 'sticky_rice_bread';
             const count = categoryCounts[cat.id] || 0;
             const localizedLabel = getCategoryLabel(cat.id, language);
 

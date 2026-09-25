@@ -29,8 +29,6 @@ export const DishCard: React.FC<DishCardProps> = ({
     switch (cat) {
       case 'ready_made':
         return 'bg-[#2D463E] text-white border-black/10';
-      case 'bulk_sticky_rice':
-        return 'bg-[#C05A3D] text-white border-[#C05A3D] font-bold shadow-xs';
       case 'sticky_rice_bread':
         return 'bg-[#C05A3D] text-white border-black/10';
       case 'cereal_cake':

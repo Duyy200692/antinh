@@ -12,9 +12,13 @@ import {
   CheckCircle2,
   MessageCircle,
   UtensilsCrossed,
+  Upload,
+  Loader2,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { DishItem, StickyRiceCategoryInfo, ShopInfo, Language } from '../types';
 import { DEFAULT_STICKY_RICE_CATEGORY_INFO } from '../data/mockDishes';
+import { compressImageToWebp, uploadWebpImageToFirebase, getLocalImagePreviewUrl } from '../utils/imageUtils';
 
 interface StickyRiceOrderModalProps {
   isOpen: boolean;
@@ -77,6 +81,35 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
   const [editDishImage, setEditDishImage] = useState('');
   const [editDishAvail, setEditDishAvail] = useState(true);
   const [editDishStatusBadge, setEditDishStatusBadge] = useState('');
+
+  // Image Upload State
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [webpStats, setWebpStats] = useState<{ orig: number; comp: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleFileUpload = async (file: File) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Vui lòng chọn một tập tin hình ảnh hợp lệ.');
+      return;
+    }
+
+    const localPreview = getLocalImagePreviewUrl(file);
+    setEditDishImage(localPreview);
+    setIsUploadingImage(true);
+    setWebpStats(null);
+
+    try {
+      const { webpDataUrl, originalSize, compressedSize } = await compressImageToWebp(file, 720, 0.75);
+      setWebpStats({ orig: originalSize, comp: compressedSize });
+
+      const finalUrl = await uploadWebpImageToFirebase(webpDataUrl, 'menu_dishes');
+      setEditDishImage(finalUrl);
+    } catch (err) {
+      console.error('Lỗi xử lý ảnh:', err);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   // Customer order quantities state (e.g. { 'xoi-01': 2 })
   const [orderCart, setOrderCart] = useState<Record<string, number>>({});
@@ -759,22 +792,109 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
                           </div>
 
                           <div>
-                            <label className="block font-bold text-[#1A1A1A] mb-0.5">Link ảnh món (URL):</label>
-                            <input
-                              type="text"
-                              value={editDishImage}
-                              onChange={(e) => setEditDishImage(e.target.value)}
-                              placeholder="https://..."
-                              className="w-full px-2.5 py-1.5 rounded-md bg-white border border-black/20 focus:ring-1 focus:ring-[#C05A3D] text-xs font-mono"
-                            />
+                            <div className="flex items-center justify-between gap-1 mb-1">
+                              <label className="block font-bold text-[#1A1A1A]">Hình ảnh món ăn:</label>
+                              {webpStats && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#2D463E] text-white text-[9px] font-bold">
+                                  <CheckCircle2 className="w-2.5 h-2.5 text-[#E5E1D8]" />
+                                  <span>Đã nén .WEBP ({(webpStats.comp / 1024).toFixed(0)}KB)</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Drag & Drop / File Input Box */}
+                            <div
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                setIsDragging(true);
+                              }}
+                              onDragLeave={(e) => {
+                                e.preventDefault();
+                                setIsDragging(false);
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                setIsDragging(false);
+                                const file = e.dataTransfer.files?.[0];
+                                if (file) handleFileUpload(file);
+                              }}
+                              onClick={() => document.getElementById(`sticky-dish-file-${dish.id}`)?.click()}
+                              className={`border-2 border-dashed rounded-md p-2.5 text-center cursor-pointer transition-all ${
+                                isDragging
+                                  ? 'border-[#C05A3D] bg-[#C05A3D]/10'
+                                  : 'border-black/20 bg-amber-50/50 hover:bg-amber-100/40'
+                              }`}
+                            >
+                              <input
+                                id={`sticky-dish-file-${dish.id}`}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleFileUpload(f);
+                                }}
+                                className="hidden"
+                              />
+
+                              <div className="flex items-center gap-2.5 justify-center">
+                                {editDishImage ? (
+                                  <img
+                                    src={editDishImage}
+                                    alt="Preview"
+                                    className="w-10 h-10 rounded object-cover border border-black/10 shrink-0 shadow-xs"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded bg-white border border-black/10 flex items-center justify-center shrink-0">
+                                    <ImageIcon className="w-5 h-5 text-[#C05A3D]" />
+                                  </div>
+                                )}
+
+                                <div className="text-left">
+                                  <p className="text-xs font-bold text-[#1A1A1A] flex items-center gap-1">
+                                    {isUploadingImage ? (
+                                      <span className="inline-flex items-center gap-1 text-[#C05A3D]">
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        Đang nén & tải ảnh...
+                                      </span>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-3.5 h-3.5 text-[#C05A3D]" />
+                                        <span>Bấm chọn ảnh hoặc kéo thả ảnh từ thiết bị</span>
+                                      </>
+                                    )}
+                                  </p>
+                                  <p className="text-[10px] text-[#1A1A1A]/60">
+                                    Tự động tối ưu định dạng WebP siêu nhẹ, load nhanh
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Manual URL Input */}
+                            <div className="mt-1.5">
+                              <input
+                                type="text"
+                                value={editDishImage}
+                                onChange={(e) => {
+                                  setEditDishImage(e.target.value);
+                                  setWebpStats(null);
+                                }}
+                                placeholder="Hoặc dán link ảnh URL (https://...)"
+                                className="w-full px-2.5 py-1 rounded bg-white border border-black/20 focus:ring-1 focus:ring-[#C05A3D] text-[11px] font-mono"
+                              />
+                            </div>
+
                             {/* Quick Presets */}
                             <div className="flex flex-wrap gap-1 mt-1.5">
-                              <span className="text-[10px] text-gray-500 self-center">Chọn ảnh mẫu:</span>
+                              <span className="text-[10px] text-gray-500 self-center">Hoặc chọn ảnh mẫu:</span>
                               {STICKY_RICE_IMAGE_PRESETS.map((p, idx) => (
                                 <button
                                   key={idx}
                                   type="button"
-                                  onClick={() => setEditDishImage(p.url)}
+                                  onClick={() => {
+                                    setEditDishImage(p.url);
+                                    setWebpStats(null);
+                                  }}
                                   className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-800 cursor-pointer"
                                 >
                                   {p.label}

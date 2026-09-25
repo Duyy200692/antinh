@@ -134,7 +134,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 rel="noopener noreferrer"
                 className="px-3.5 py-1.5 rounded-sm bg-[#C05A3D] hover:bg-[#a0452c] text-white font-sans text-xs font-bold uppercase tracking-wider shrink-0 transition-colors cursor-pointer"
               >
-                {t.bulkOrderZaloBtn}
+                {language === 'en' ? 'Order via Zalo' : 'Đặt xôi qua Zalo'}
               </a>
             </div>
           )}
