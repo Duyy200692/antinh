@@ -54,3 +54,14 @@ export interface CategoryConfig {
   iconName: string;
   colorClass: string;
 }
+
+export interface StickyRiceCategoryInfo {
+  title: string;
+  subtitle: string;
+  description: string;
+  hotline: string;
+  zalo: string;
+  orderNotice: string;
+  minimumLeadTime: string;
+  cateringNote: string;
+}

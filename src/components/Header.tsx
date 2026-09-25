@@ -20,8 +20,8 @@ interface HeaderProps {
   isAdminLoggedIn: boolean;
   onLogoutAdmin: () => void;
   onOpenAuthModal: () => void;
-  mainTab: 'today' | 'fixed' | 'all';
-  setMainTab: (tab: 'today' | 'fixed' | 'all') => void;
+  mainTab: 'today' | 'fixed' | 'bulk_sticky_rice' | 'all';
+  setMainTab: (tab: 'today' | 'fixed' | 'bulk_sticky_rice' | 'all') => void;
   language: Language;
   onLanguageChange: (lang: Language) => void;
 }
@@ -264,6 +264,24 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <span>{t.tabFixed}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setMainTab('bulk_sticky_rice');
+                setSelectedDay('all');
+              }}
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md font-sans text-[11px] sm:text-xs uppercase tracking-wider font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                mainTab === 'bulk_sticky_rice'
+                  ? 'bg-[#C05A3D] text-white shadow-xs'
+                  : 'text-[#C05A3D] hover:bg-[#C05A3D]/10'
+              }`}
+            >
+              <span>🌾</span>
+              <span>{t.tabStickyRice}</span>
+              <span className="text-[9px] px-1 py-0.2 rounded-xs bg-[#C05A3D] text-white font-extrabold uppercase tracking-tight">
+                HOT
+              </span>
             </button>
 
             <button

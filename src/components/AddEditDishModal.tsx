@@ -10,6 +10,7 @@ interface AddEditDishModalProps {
   onSave: (dish: DishItem) => void;
   onDelete?: (dishId: string) => void;
   initialDish?: DishItem | null;
+  defaultCategory?: DishCategory;
 }
 
 export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
@@ -18,6 +19,7 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
   onSave,
   onDelete,
   initialDish,
+  defaultCategory,
 }) => {
   const [name, setName] = useState('');
   const [nameEn, setNameEn] = useState('');
@@ -76,21 +78,30 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
       setPrepTime(initialDish.prepTime);
       setIsAvailableToday(initialDish.isAvailableToday);
     } else {
+      const targetCat = defaultCategory || 'daily_main';
       setName('');
       setNameEn('');
       setDescription('');
       setDescriptionEn('');
-      setPrice('45.000đ');
-      setUnit('Phần');
-      setCategory('daily_main');
+      setPrice(targetCat === 'bulk_sticky_rice' ? '180.000đ' : '45.000đ');
+      setUnit(targetCat === 'bulk_sticky_rice' ? 'Mâm 1.5kg' : 'Phần');
+      setCategory(targetCat);
       setAvailableDays(['all']);
-      setImage(IMAGE_PRESETS[1].url);
-      setTagsInput('Món chay, Thơm ngon');
-      setPrepTime('5 - 10 phút');
+      setImage(
+        targetCat === 'bulk_sticky_rice'
+          ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'
+          : IMAGE_PRESETS[1].url
+      );
+      setTagsInput(
+        targetCat === 'bulk_sticky_rice'
+          ? 'Đặt tiệc, Cúng rằm, Nếp cái hoa vàng, Giao tận nơi'
+          : 'Món chay, Thơm ngon'
+      );
+      setPrepTime(targetCat === 'bulk_sticky_rice' ? 'Đặt trước 12h - 24h' : '5 - 10 phút');
       setIsAvailableToday(true);
     }
     setWebpStats(null);
-  }, [initialDish, isOpen]);
+  }, [initialDish, isOpen, defaultCategory]);
 
   if (!isOpen) return null;
 

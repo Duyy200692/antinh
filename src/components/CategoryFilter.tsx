@@ -3,7 +3,7 @@ import { DishCategory, Language } from '../types';
 import { CATEGORIES } from '../data/mockDishes';
 import { getCategoryLabel } from '../utils/dayUtils';
 import { TRANSLATIONS } from '../utils/i18n';
-import { Utensils, PackageCheck, Wheat, Cookie, LayoutGrid, CheckSquare, Square } from 'lucide-react';
+import { Utensils, PackageCheck, Wheat, Cookie, LayoutGrid, CheckSquare, Square, Sparkles } from 'lucide-react';
 
 interface CategoryFilterProps {
   selectedCategory: DishCategory | 'all_categories';
@@ -34,6 +34,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         return <Wheat className="w-3.5 h-3.5" />;
       case 'Cookie':
         return <Cookie className="w-3.5 h-3.5" />;
+      case 'Sparkles':
+        return <Sparkles className="w-3.5 h-3.5" />;
       case 'LayoutGrid':
       default:
         return <LayoutGrid className="w-3.5 h-3.5" />;
@@ -47,6 +49,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar -mx-1 px-1">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
+            const isBulkSpecial = cat.id === 'bulk_sticky_rice';
             const count = categoryCounts[cat.id] || 0;
             const localizedLabel = getCategoryLabel(cat.id, language);
 
@@ -56,19 +59,30 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 onClick={() => onSelectCategory(cat.id)}
                 className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm text-xs font-sans uppercase tracking-wider transition-all cursor-pointer border ${
                   isSelected
-                    ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] shadow-xs font-bold'
-                    : 'bg-[#FDFCFB] hover:bg-[#E5E1D8] text-[#1A1A1A]/80 border-black/10 font-semibold'
+                    ? isBulkSpecial
+                      ? 'bg-[#C05A3D] text-white border-[#C05A3D] shadow-sm font-bold'
+                      : 'bg-[#1A1A1A] text-white border-[#1A1A1A] shadow-xs font-bold'
+                    : isBulkSpecial
+                      ? 'bg-[#FFF7F4] hover:bg-[#FBEBE6] text-[#C05A3D] border-[#C05A3D]/40 font-bold shadow-xs'
+                      : 'bg-[#FDFCFB] hover:bg-[#E5E1D8] text-[#1A1A1A]/80 border-black/10 font-semibold'
                 }`}
               >
-                <span className={isSelected ? 'text-[#C05A3D]' : 'text-[#C05A3D]/80'}>
+                <span className={isSelected ? 'text-white' : isBulkSpecial ? 'text-[#C05A3D]' : 'text-[#C05A3D]/80'}>
                   {getIcon(cat.iconName)}
                 </span>
                 <span>{localizedLabel}</span>
+                {isBulkSpecial && !isSelected && (
+                  <span className="text-[9px] px-1 py-0.2 rounded-xs bg-[#C05A3D] text-white font-extrabold uppercase tracking-tight">
+                    HOT
+                  </span>
+                )}
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-sm font-bold ${
                     isSelected
-                      ? 'bg-[#C05A3D] text-white'
-                      : 'bg-[#E5E1D8] text-[#1A1A1A]/70'
+                      ? isBulkSpecial ? 'bg-white/20 text-white' : 'bg-[#C05A3D] text-white'
+                      : isBulkSpecial
+                        ? 'bg-[#C05A3D]/15 text-[#C05A3D]'
+                        : 'bg-[#E5E1D8] text-[#1A1A1A]/70'
                   }`}
                 >
                   {count}

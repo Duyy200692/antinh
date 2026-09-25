@@ -2,12 +2,13 @@ import React from 'react';
 import { DishItem, Language } from '../types';
 import { getCategoryLabel, getDayLabel } from '../utils/dayUtils';
 import { getLocalizedDish, TRANSLATIONS } from '../utils/i18n';
-import { CheckCircle2, XCircle, Eye } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, Edit3 } from 'lucide-react';
 
 interface DishCardProps {
   dish: DishItem;
   onSelectDish: (dish: DishItem) => void;
   onToggleStock?: (dishId: string, e: React.MouseEvent) => void;
+  onEditDish?: (dish: DishItem, e: React.MouseEvent) => void;
   isAdmin?: boolean;
   language?: Language;
 }
@@ -16,6 +17,7 @@ export const DishCard: React.FC<DishCardProps> = ({
   dish,
   onSelectDish,
   onToggleStock,
+  onEditDish,
   isAdmin = false,
   language = 'vi' as Language,
 }) => {
@@ -27,6 +29,8 @@ export const DishCard: React.FC<DishCardProps> = ({
     switch (cat) {
       case 'ready_made':
         return 'bg-[#2D463E] text-white border-black/10';
+      case 'bulk_sticky_rice':
+        return 'bg-[#C05A3D] text-white border-[#C05A3D] font-bold shadow-xs';
       case 'sticky_rice_bread':
         return 'bg-[#C05A3D] text-white border-black/10';
       case 'cereal_cake':
@@ -129,28 +133,42 @@ export const DishCard: React.FC<DishCardProps> = ({
         </div>
 
         {/* Status display for Customers or Quick Stock Toggle for Admin */}
-        {isAdmin && onToggleStock ? (
-          <button
-            onClick={(e) => onToggleStock(dish.id, e)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[11px] font-sans uppercase tracking-wider font-bold transition-all cursor-pointer ${
-              dish.isAvailableToday
-                ? 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
-                : 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
-            }`}
-            title="Admin"
-          >
-            {dish.isAvailableToday ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{t.inStockBadge}</span>
-              </>
-            ) : (
-              <>
-                <XCircle className="w-3.5 h-3.5" />
-                <span>{t.soldOutBadge}</span>
-              </>
+        {isAdmin ? (
+          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {onToggleStock && (
+              <button
+                onClick={(e) => onToggleStock(dish.id, e)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[11px] font-sans uppercase tracking-wider font-bold transition-all cursor-pointer ${
+                  dish.isAvailableToday
+                    ? 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
+                    : 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
+                }`}
+                title="Bật/Tắt còn hàng"
+              >
+                {dish.isAvailableToday ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{t.inStockBadge}</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>{t.soldOutBadge}</span>
+                  </>
+                )}
+              </button>
             )}
-          </button>
+
+            {onEditDish && (
+              <button
+                onClick={(e) => onEditDish(dish, e)}
+                className="p-1 rounded-sm bg-[#E5E1D8] hover:bg-[#C05A3D] text-[#1A1A1A] hover:text-white transition-colors cursor-pointer border border-black/10"
+                title="Sửa món ăn này"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         ) : (
           <div className="flex items-center gap-1">
             {dish.isAvailableToday ? (

@@ -30,6 +30,22 @@
         "slogan": { "type": "string" }
       },
       "required": ["name", "address", "phone"]
+    },
+    "StickyRiceCategory": {
+      "title": "StickyRiceCategory",
+      "description": "Information for the sticky rice ordering category",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "description": { "type": "string" },
+        "hotline": { "type": "string" },
+        "zalo": { "type": "string" },
+        "orderNotice": { "type": "string" },
+        "minimumLeadTime": { "type": "string" },
+        "cateringNote": { "type": "string" }
+      },
+      "required": ["title", "hotline"]
     }
   },
   "firestore": {

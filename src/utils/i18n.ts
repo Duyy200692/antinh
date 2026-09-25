@@ -87,6 +87,7 @@ export interface Translations {
   navFixed: string;
   navSearch: string;
   navShop: string;
+  navStickyRice: string;
   navAdmin: string;
   navAdminLoggedIn: string;
   
@@ -203,6 +204,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     navFixed: 'Cố Định',
     navSearch: 'Tìm Kiếm',
     navShop: 'Quán',
+    navStickyRice: 'Đặt xôi',
     navAdmin: 'Đăng Nhập',
     navAdminLoggedIn: 'Bếp Admin',
     
@@ -313,6 +315,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     navFixed: 'Fixed Menu',
     navSearch: 'Search',
     navShop: 'Shop',
+    navStickyRice: 'Sticky Rice',
     navAdmin: 'Login',
     navAdminLoggedIn: 'Admin Kitchen',
     

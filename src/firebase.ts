@@ -10,7 +10,7 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { DishItem, ShopInfo } from './types';
+import { DishItem, ShopInfo, StickyRiceCategoryInfo } from './types';
 
 // Initialize Firebase App if not initialized
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -274,6 +274,50 @@ export async function saveAdminPinToFirestore(newPin: string): Promise<{ success
     return { success: true };
   } catch (err: any) {
     console.warn('⚠️ Lỗi khi lưu mã PIN mới vào Firestore:', err);
+    const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
+    return { success: false, isQuotaExceeded: isQuota };
+  }
+}
+
+// -------------------------------------------------------------
+// Sticky Rice Category & Ordering Information
+// -------------------------------------------------------------
+const STICKY_RICE_CONFIG_DOC = 'sticky_rice_category';
+
+export function subscribeToStickyRiceCategory(
+  onSuccess: (info: StickyRiceCategoryInfo) => void
+): () => void {
+  const docRef = doc(db, SETTINGS_COLLECTION, STICKY_RICE_CONFIG_DOC);
+  return onSnapshot(
+    docRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && data.title) {
+          onSuccess(data as StickyRiceCategoryInfo);
+        }
+      }
+    },
+    (err) => {
+      console.warn('Sticky rice category subscription warning:', err);
+    }
+  );
+}
+
+export async function saveStickyRiceCategoryToFirestore(
+  info: StickyRiceCategoryInfo
+): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
+  try {
+    const docRef = doc(db, SETTINGS_COLLECTION, STICKY_RICE_CONFIG_DOC);
+    const cleanInfo = sanitizeData(info);
+    await setDoc(docRef, {
+      ...cleanInfo,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    console.log('✅ Đã lưu thông tin danh mục đặt xôi vào Firestore');
+    return { success: true };
+  } catch (err: any) {
+    console.warn('⚠️ Lỗi khi lưu thông tin danh mục đặt xôi vào Firestore:', err);
     const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
     return { success: false, isQuotaExceeded: isQuota };
   }

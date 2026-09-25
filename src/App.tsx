@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DishItem, DayOfWeek, DishCategory, ShopInfo, Language } from './types';
-import { INITIAL_DISHES, SHOP_INFO as DEFAULT_SHOP_INFO } from './data/mockDishes';
+import { DishItem, DayOfWeek, DishCategory, ShopInfo, Language, StickyRiceCategoryInfo } from './types';
+import { INITIAL_DISHES, SHOP_INFO as DEFAULT_SHOP_INFO, DEFAULT_STICKY_RICE_CATEGORY_INFO } from './data/mockDishes';
 import {
   filterDishes,
   getDishesCountByDay,
@@ -20,6 +20,7 @@ import { WeeklyOverviewModal } from './components/WeeklyOverviewModal';
 import { AdminModal } from './components/AdminModal';
 import { AdminAuthModal } from './components/AdminAuthModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { StickyRiceOrderModal } from './components/StickyRiceOrderModal';
 import {
   subscribeToDishes,
   saveDishToFirestore,
@@ -30,12 +31,15 @@ import {
   saveShopInfoToFirestore,
   subscribeToAdminPin,
   saveAdminPinToFirestore,
+  subscribeToStickyRiceCategory,
+  saveStickyRiceCategoryToFirestore,
   testFirestoreConnection,
 } from './firebase';
 import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers, Info } from 'lucide-react';
 
 const DISHES_STORAGE_KEY = 'tam_chay_internal_menu_dishes_v2';
 const SHOP_STORAGE_KEY = 'tam_chay_shop_info_v2';
+const STICKY_RICE_CAT_STORAGE_KEY = 'tam_chay_sticky_rice_category_v2';
 const ADMIN_AUTH_KEY = 'tam_chay_admin_logged_in_v1';
 const ADMIN_PIN_STORAGE_KEY = 'tam_chay_admin_pin_code_v1';
 
@@ -95,6 +99,19 @@ export default function App() {
     return DEFAULT_SHOP_INFO;
   });
 
+  // Sticky Rice Category Info State
+  const [stickyRiceCategory, setStickyRiceCategory] = useState<StickyRiceCategoryInfo>(() => {
+    try {
+      const saved = localStorage.getItem(STICKY_RICE_CAT_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed to load sticky rice category info', e);
+    }
+    return DEFAULT_STICKY_RICE_CATEGORY_INFO;
+  });
+
   // Firebase connection test & real-time listeners
   useEffect(() => {
     testFirestoreConnection();
@@ -118,6 +135,15 @@ export default function App() {
       }
     });
 
+    // Subscribe to Firestore Sticky Rice Category Info
+    const unsubscribeStickyRice = subscribeToStickyRiceCategory((remoteCat) => {
+      if (remoteCat && remoteCat.title) {
+        setStickyRiceCategory(remoteCat);
+      } else {
+        saveStickyRiceCategoryToFirestore(DEFAULT_STICKY_RICE_CATEGORY_INFO);
+      }
+    });
+
     // Subscribe to Firestore Admin PIN
     const unsubscribePin = subscribeToAdminPin((remotePin) => {
       if (remotePin) {
@@ -133,6 +159,7 @@ export default function App() {
     return () => {
       unsubscribeDishes();
       unsubscribeShop();
+      unsubscribeStickyRice();
       unsubscribePin();
     };
   }, []);
@@ -196,6 +223,7 @@ export default function App() {
   const [isWeeklyOverviewModalOpen, setIsWeeklyOverviewModalOpen] = useState<boolean>(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isStickyRiceModalOpen, setIsStickyRiceModalOpen] = useState<boolean>(false);
 
   // Lock body scroll when any modal is open on mobile
   useEffect(() => {
@@ -205,7 +233,8 @@ export default function App() {
       isShopInfoModalOpen ||
       isWeeklyOverviewModalOpen ||
       isAdminModalOpen ||
-      isAuthModalOpen;
+      isAuthModalOpen ||
+      isStickyRiceModalOpen;
 
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -229,6 +258,7 @@ export default function App() {
     isWeeklyOverviewModalOpen,
     isAdminModalOpen,
     isAuthModalOpen,
+    isStickyRiceModalOpen,
   ]);
 
   // Day selection change handler
@@ -384,6 +414,19 @@ export default function App() {
     const res = await saveShopInfoToFirestore(newShopInfo);
     if (res.isQuotaExceeded) {
       alert('⚠️ Thông tin quán đã lưu vào bộ nhớ web! (Firebase Cloud tạm hết Quota hôm nay).');
+    }
+  };
+
+  const handleSaveStickyRiceCategory = async (newCatInfo: StickyRiceCategoryInfo) => {
+    setStickyRiceCategory(newCatInfo);
+    try {
+      localStorage.setItem(STICKY_RICE_CAT_STORAGE_KEY, JSON.stringify(newCatInfo));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+    const res = await saveStickyRiceCategoryToFirestore(newCatInfo);
+    if (res.isQuotaExceeded) {
+      console.warn('Firebase Quota exceeded for sticky rice category. Saved in local storage.');
     }
   };
 
@@ -765,10 +808,29 @@ export default function App() {
         setMainTab={setMainTab}
         onOpenSearch={handleFocusSearch}
         onOpenShopInfo={() => setIsShopInfoModalOpen(true)}
+        onOpenStickyRice={() => setIsStickyRiceModalOpen(true)}
         onOpenAdmin={() => handleRequireAdmin(() => setIsAdminModalOpen(true))}
         onOpenWeeklyOverview={() => setIsWeeklyOverviewModalOpen(true)}
         isAdminLoggedIn={isAdminLoggedIn}
         todayLabel={todayLabel}
+        language={language}
+      />
+
+      {/* Sticky Rice Order Modal (Mục Đặt Xôi trên Mobile Footer & Quản Lý Danh Mục/Món) */}
+      <StickyRiceOrderModal
+        isOpen={isStickyRiceModalOpen}
+        onClose={() => setIsStickyRiceModalOpen(false)}
+        dishes={dishes}
+        categoryInfo={stickyRiceCategory}
+        onSaveCategoryInfo={handleSaveStickyRiceCategory}
+        onSaveDish={handleSaveDish}
+        onDeleteDish={handleDeleteDish}
+        onToggleStock={(id) => handleToggleStock(id)}
+        onOpenAddDishModal={(dish) => {
+          setEditingDish(dish || null);
+          setIsAddModalOpen(true);
+        }}
+        shopInfo={shopInfo}
         language={language}
       />
 

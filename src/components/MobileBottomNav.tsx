@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Layers, Search, Info, ShieldCheck, Calendar } from 'lucide-react';
+import { Sparkles, Layers, Search, Wheat, ShieldCheck, Calendar } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../utils/i18n';
 
@@ -7,7 +7,8 @@ interface MobileBottomNavProps {
   mainTab: 'today' | 'fixed' | 'all';
   setMainTab: (tab: 'today' | 'fixed' | 'all') => void;
   onOpenSearch: () => void;
-  onOpenShopInfo: () => void;
+  onOpenShopInfo?: () => void;
+  onOpenStickyRice: () => void;
   onOpenAdmin: () => void;
   onOpenWeeklyOverview: () => void;
   isAdminLoggedIn: boolean;
@@ -19,7 +20,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   mainTab,
   setMainTab,
   onOpenSearch,
-  onOpenShopInfo,
+  onOpenStickyRice,
   onOpenAdmin,
   onOpenWeeklyOverview,
   isAdminLoggedIn,
@@ -77,14 +78,17 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </span>
         </button>
 
-        {/* Tab 4: Shop Info */}
+        {/* Tab 4: Đặt Xôi (Thay thế cho mục Quán theo yêu cầu) */}
         <button
-          onClick={onOpenShopInfo}
-          className="flex flex-col items-center justify-center h-full text-white/60 hover:text-white transition-all cursor-pointer"
+          onClick={onOpenStickyRice}
+          className="flex flex-col items-center justify-center h-full text-white/60 hover:text-white transition-all cursor-pointer group"
         >
-          <Info className="w-5 h-5 text-[#E5E1D8]" />
-          <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
-            {t.navShop}
+          <div className="relative">
+            <Wheat className="w-5 h-5 text-[#E5E1D8] group-hover:text-[#C05A3D] transition-colors" />
+            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-[#C05A3D]" />
+          </div>
+          <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1 text-[#E5E1D8] group-hover:text-[#C05A3D]">
+            {t.navStickyRice || 'Đặt xôi'}
           </span>
         </button>
 

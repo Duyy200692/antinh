@@ -116,6 +116,29 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </p>
           </div>
 
+          {dish.category === 'bulk_sticky_rice' && (
+            <div className="p-4 rounded-lg bg-[#FFF7F4] border border-[#C05A3D]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <span className="inline-block px-2 py-0.5 rounded-sm bg-[#C05A3D] text-white text-[10px] font-sans font-bold uppercase tracking-wider mb-1">
+                  🌾 Dịch Vụ Đặt Xôi Số Lượng Lớn
+                </span>
+                <p className="text-xs font-sans text-[#1A1A1A]/80 leading-relaxed">
+                  {language === 'en'
+                    ? 'Custom celebratory molds (Joy, Fortune) or event individual boxes. Please order ahead for fresh steaming preparation and punctual ritual delivery.'
+                    : 'Nhận ép khuôn chữ Hỷ, Phúc - Lộc - Thọ, đóng mâm cúng hoặc chia hộp kraft sự kiện. Đặt trước để quán nấu nóng hổi và giao đúng giờ hoàng đạo.'}
+                </p>
+              </div>
+              <a
+                href={`https://zalo.me/${SHOP_INFO.phone.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-1.5 rounded-sm bg-[#C05A3D] hover:bg-[#a0452c] text-white font-sans text-xs font-bold uppercase tracking-wider shrink-0 transition-colors cursor-pointer"
+              >
+                {t.bulkOrderZaloBtn}
+              </a>
+            </div>
+          )}
+
           {/* Ordering Callout */}
           <div className="p-4 rounded-sm bg-[#F4F1EA] border border-black/10 flex items-center justify-between gap-3">
             <div className="text-xs sm:text-sm font-sans">

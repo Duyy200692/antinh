@@ -495,3 +495,14 @@ export const SHOP_INFO: ShopInfo = {
   footerNote: '© 2026 AN TỊNH • Thực đơn món chay thanh tịnh',
   logoUrl: '',
 };
+
+export const DEFAULT_STICKY_RICE_CATEGORY_INFO = {
+  title: 'Chuyên Mục Đặt Xôi & Xôi Chay An Tịnh',
+  subtitle: 'Xôi Nếp Cái Hoa Vàng Chuẩn Vị Bắc • Nhận Đặt Tiệc, Cúng Rằm, Sự Kiện',
+  description: 'Quán An Tịnh chuyên phục vụ các món xôi chay truyền thống nấu từ nếp cái hoa vàng hạt mẩy dẻo thơm, kết hợp cùng các món chà bông nấm hương rừng, sườn non lúa mạch và đậu xanh bùi béo tự nhiên. 100% nguyên liệu thực vật thuần khiết, không phẩm màu, không chất bảo quản.',
+  hotline: '0909 310 567',
+  zalo: '0909 310 567',
+  orderNotice: 'Nhận đặt xôi ăn sáng, đặt số lượng lớn cho hội nghị, đám tiệc chay, lễ cúng rằm và mùng một.',
+  minimumLeadTime: 'Đặt trước 30 - 60 phút cho đơn lẻ, hoặc trước 1 ngày cho đơn tiệc số lượng lớn.',
+  cateringNote: 'Có chiết khấu và hỗ trợ đóng hộp lá chuối / hộp giấy bảo vệ môi trường cho đơn từ 20 phần trở lên.',
+};
