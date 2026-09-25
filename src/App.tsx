@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DishItem, DayOfWeek, DishCategory, ShopInfo } from './types';
+import { DishItem, DayOfWeek, DishCategory, ShopInfo, Language } from './types';
 import { INITIAL_DISHES, SHOP_INFO as DEFAULT_SHOP_INFO } from './data/mockDishes';
 import {
   filterDishes,
@@ -8,6 +8,7 @@ import {
   getDayLabel,
   getTodayDayOfWeek,
 } from './utils/dayUtils';
+import { TRANSLATIONS, LANGUAGE_STORAGE_KEY, getLocalizedShopInfo } from './utils/i18n';
 import { Header } from './components/Header';
 import { DaySelector } from './components/DaySelector';
 import { CategoryFilter } from './components/CategoryFilter';
@@ -31,7 +32,7 @@ import {
   saveAdminPinToFirestore,
   testFirestoreConnection,
 } from './firebase';
-import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers, Edit3 } from 'lucide-react';
+import { Sparkles, UtensilsCrossed, PlusCircle, RotateCcw, Calendar, ShieldCheck, Flame, Layers, Edit3, Info } from 'lucide-react';
 
 const DISHES_STORAGE_KEY = 'tam_chay_internal_menu_dishes_v2';
 const SHOP_STORAGE_KEY = 'tam_chay_shop_info_v2';
@@ -39,6 +40,27 @@ const ADMIN_AUTH_KEY = 'tam_chay_admin_logged_in_v1';
 const ADMIN_PIN_STORAGE_KEY = 'tam_chay_admin_pin_code_v1';
 
 export default function App() {
+  // Language State (Vietnamese / English)
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (saved === 'en' || saved === 'vi') return saved;
+    } catch (e) {
+      // ignore
+    }
+    return 'vi';
+  });
+
+  // Sync html lang tag and localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+      document.documentElement.lang = language;
+    } catch (e) {
+      console.error('Failed to save language', e);
+    }
+  }, [language]);
+
   // Admin PIN State (defaults to 1234, synced to Firestore & localStorage)
   const [adminPin, setAdminPin] = useState<string>(() => {
     try {
@@ -216,8 +238,8 @@ export default function App() {
 
   // Base Filtered dishes
   const filteredDishes = useMemo(() => {
-    return filterDishes(dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable);
-  }, [dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable]);
+    return filterDishes(dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable, language);
+  }, [dishes, selectedDay, selectedCategory, searchQuery, onlyAvailable, language]);
 
   // Separate dishes into 2 clear distinct sections:
   // 1. Món Hôm Nay (Daily Specials according to day or today)
@@ -377,8 +399,10 @@ export default function App() {
     }
   };
 
-  // Heading label
-  const todayLabel = getDayLabel(getTodayDayOfWeek());
+  // Heading label & Localized texts
+  const t = TRANSLATIONS[language];
+  const localizedShopInfo = getLocalizedShopInfo(shopInfo, language);
+  const todayLabel = getDayLabel(getTodayDayOfWeek(), language);
 
   // Focus search bar on mobile tab tap
   const handleFocusSearch = () => {
@@ -411,6 +435,8 @@ export default function App() {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         mainTab={mainTab}
         setMainTab={setMainTab}
+        language={language}
+        onLanguageChange={setLanguage}
       />
 
       {/* Day Selector (Shown when viewing today's specials or all) */}
@@ -419,6 +445,7 @@ export default function App() {
           selectedDay={selectedDay}
           onSelectDay={handleSelectDay}
           dishesCountByDay={dishesCountByDay}
+          language={language}
         />
       )}
 
@@ -429,6 +456,7 @@ export default function App() {
         onlyAvailable={onlyAvailable}
         onToggleOnlyAvailable={() => setOnlyAvailable(!onlyAvailable)}
         categoryCounts={categoryCounts}
+        language={language}
       />
 
       {/* Main Content Area */}
@@ -441,25 +469,25 @@ export default function App() {
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="w-2 h-2 rounded-full bg-[#C05A3D] animate-pulse" />
                   <span className="font-sans text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-[#C05A3D] font-bold">
-                    Thực Đơn Luân Phiên Thay Đổi
+                    {t.section1Badge}
                   </span>
                 </div>
                 <h2 className="font-serif text-lg sm:text-2xl font-bold uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
                   <Flame className="w-5 h-5 text-[#C05A3D]" />
-                  <span>Mục 1: Món Ăn Hôm Nay ({selectedDay === 'today' ? todayLabel : getDayLabel(selectedDay)})</span>
+                  <span>{t.section1Title} ({selectedDay === 'today' ? todayLabel : getDayLabel(selectedDay, language)})</span>
                   <span className="text-xs font-sans font-bold px-2 py-0.5 rounded-full bg-[#C05A3D] text-white">
-                    {todaySpecialDishes.length} món
+                    {todaySpecialDishes.length} {t.dishesUnit}
                   </span>
                 </h2>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
                 <button
                   onClick={() => setIsWeeklyOverviewModalOpen(true)}
                   className="px-3 py-1.5 rounded-sm bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A] font-sans text-[11px] uppercase tracking-wider font-bold border border-black/10 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Calendar className="w-3.5 h-3.5 text-[#C05A3D]" />
-                  <span>Xem lịch tuần</span>
+                  <span>{t.weekScheduleBtn}</span>
                 </button>
               </div>
             </div>
@@ -473,6 +501,7 @@ export default function App() {
                     onSelectDish={(d) => setSelectedDishForDetail(d)}
                     onToggleStock={(id, e) => handleToggleStock(id, undefined, e)}
                     isAdmin={isAdminLoggedIn}
+                    language={language}
                   />
                 ))}
               </div>
@@ -480,10 +509,10 @@ export default function App() {
               <div className="bg-[#F4F1EA] rounded-lg p-6 text-center border border-black/10">
                 <UtensilsCrossed className="w-7 h-7 text-[#C05A3D] mx-auto mb-2 opacity-60" />
                 <p className="font-serif text-sm font-bold text-[#1A1A1A]">
-                  Không có món đặc biệt luân phiên nào cho mục này.
+                  {t.emptySection1Title}
                 </p>
                 <p className="font-sans text-[11px] text-[#1A1A1A]/60 mt-1">
-                  Hãy xem các món ngon trong danh mục Món Cố Định bên dưới.
+                  {t.emptySection1Desc}
                 </p>
               </div>
             )}
@@ -498,14 +527,14 @@ export default function App() {
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="w-2 h-2 rounded-full bg-[#2D463E]" />
                   <span className="font-sans text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-[#2D463E] font-bold">
-                    Món Phục Vụ Hằng Ngày • Xôi - Bánh Mì - Đồ Hũ Làm Sẵn
+                    {t.section2Badge}
                   </span>
                 </div>
                 <h2 className="font-serif text-lg sm:text-2xl font-bold uppercase tracking-tight text-[#1A1A1A] flex items-center gap-2">
                   <Layers className="w-5 h-5 text-[#2D463E]" />
-                  <span>Mục 2: Món Cố Định (Bán Tất Cả Các Ngày)</span>
+                  <span>{t.section2Title}</span>
                   <span className="text-xs font-sans font-bold px-2 py-0.5 rounded-full bg-[#2D463E] text-white">
-                    {fixedWeeklyDishes.length} món
+                    {fixedWeeklyDishes.length} {t.dishesUnit}
                   </span>
                 </h2>
               </div>
@@ -520,6 +549,7 @@ export default function App() {
                     onSelectDish={(d) => setSelectedDishForDetail(d)}
                     onToggleStock={(id, e) => handleToggleStock(id, undefined, e)}
                     isAdmin={isAdminLoggedIn}
+                    language={language}
                   />
                 ))}
               </div>
@@ -527,7 +557,7 @@ export default function App() {
               <div className="bg-[#F4F1EA] rounded-lg p-6 text-center border border-black/10">
                 <UtensilsCrossed className="w-7 h-7 text-[#2D463E] mx-auto mb-2 opacity-60" />
                 <p className="font-serif text-sm font-bold text-[#1A1A1A]">
-                  Không có món cố định nào khớp với từ khoá tìm kiếm.
+                  {t.emptySection2Title}
                 </p>
               </div>
             )}
@@ -541,12 +571,12 @@ export default function App() {
               <UtensilsCrossed className="w-8 h-8" />
             </div>
             <h3 className="font-serif text-2xl font-bold text-[#1A1A1A] mb-2 uppercase tracking-tight">
-              Không tìm thấy món ăn nào
+              {t.emptySearchTitle}
             </h3>
             <p className="font-sans text-xs text-[#1A1A1A]/70 mb-6 leading-relaxed">
               {searchQuery
-                ? `Không có món chay nào khớp với từ khoá "${searchQuery}".`
-                : 'Thực đơn trong danh mục hoặc ngày được chọn hiện đang trống.'}
+                ? t.emptySearchWithQuery(searchQuery)
+                : t.emptySearchGeneral}
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -559,7 +589,7 @@ export default function App() {
                   }}
                   className="px-5 py-2.5 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white font-sans text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer"
                 >
-                  Xoá bộ lọc & tìm kiếm
+                  {language === 'en' ? 'Reset Filters & Search' : 'Xoá bộ lọc & tìm kiếm'}
                 </button>
               )}
 
@@ -572,7 +602,7 @@ export default function App() {
                   className="px-5 py-2.5 rounded-sm bg-[#C05A3D] hover:bg-[#A0452C] text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>Thêm món mới ngay</span>
+                  <span>{t.addDishBtn}</span>
                 </button>
               )}
             </div>
@@ -580,78 +610,172 @@ export default function App() {
         )}
       </main>
 
-      {/* Editorial Footer */}
+      {/* Editorial Footer with Kitchen Admin Portal */}
       <footer className="mt-auto bg-[#F4F1EA] border-t border-black/10 py-10 pb-28 sm:pb-10">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-black/10">
-            {/* Col 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-black/10">
+            {/* Col 1: Shop Brand & Address */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-2xl">🪷</span>
                 <span className="font-serif font-black text-xl uppercase tracking-tighter text-[#1A1A1A]">
-                  {shopInfo.name}
+                  {localizedShopInfo.name}
                 </span>
                 {isAdminLoggedIn && (
                   <button
                     onClick={() => setIsShopInfoModalOpen(true)}
                     className="p-1 rounded bg-[#E5E1D8] hover:bg-[#C05A3D] text-[#1A1A1A] hover:text-white transition-colors cursor-pointer"
-                    title="Chỉnh sửa nhanh tên quán & slogan"
+                    title={t.editShopQuick}
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
-              <p className="text-xs text-[#1A1A1A]/70 font-sans leading-relaxed max-w-sm">
-                {shopInfo.slogan || 'Bếp ăn chay thanh tịnh nội bộ & xôi chay phục vụ hằng ngày.'}
+              <p className="text-xs text-[#1A1A1A]/70 font-sans leading-relaxed max-w-sm mb-3">
+                {localizedShopInfo.slogan}
               </p>
+              <div className="text-xs font-sans text-[#1A1A1A]/80 space-y-1">
+                <p>
+                  <span className="font-bold">{t.shopAddressLabel}:</span> {localizedShopInfo.address}
+                </p>
+                <p>
+                  <span className="font-bold">{t.shopHoursLabel}:</span> {localizedShopInfo.openHours}
+                </p>
+              </div>
             </div>
 
-            {/* Col 2 */}
+            {/* Col 2: Customer Contact & Orders */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#C05A3D]">
-                  Thời Gian & Liên Hệ
+                  {language === 'en' ? 'Contact & Orders' : 'Liên Hệ & Đặt Món'}
                 </h4>
                 {isAdminLoggedIn && (
                   <button
                     onClick={() => setIsShopInfoModalOpen(true)}
                     className="px-2 py-0.5 rounded bg-[#E5E1D8] hover:bg-[#C05A3D] text-[#1A1A1A] hover:text-white transition-colors cursor-pointer text-[10px] font-sans font-bold uppercase tracking-wider flex items-center gap-1"
-                    title="Chỉnh sửa nhanh thông tin liên hệ"
+                    title={t.editShopQuick}
                   >
                     <Edit3 className="w-3 h-3" />
-                    <span>Sửa liên hệ</span>
+                    <span>{t.editShopQuick}</span>
                   </button>
                 )}
               </div>
               <ul className="space-y-2 text-xs font-sans text-[#1A1A1A]/80">
                 <li>
-                  <span className="font-bold">Giờ mở cửa:</span> {shopInfo.openHours}
+                  <span className="font-bold">{t.shopContactLabel}:</span> {localizedShopInfo.contactPerson}
                 </li>
                 <li>
-                  <span className="font-bold">Phụ trách:</span> {shopInfo.contactPerson} ({shopInfo.phone})
+                  <span className="font-bold">Hotline:</span>{' '}
+                  <a
+                    href={`tel:${localizedShopInfo.phone.replace(/[^0-9+]/g, '')}`}
+                    className="font-bold text-[#C05A3D] hover:underline"
+                  >
+                    {localizedShopInfo.phone}
+                  </a>
                 </li>
-                <li>
-                  <span className="font-bold">Địa chỉ:</span> {shopInfo.address}
+                <li className="pt-2 flex items-center gap-3">
+                  <button
+                    onClick={() => setIsShopInfoModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#2D463E] hover:underline cursor-pointer"
+                  >
+                    <Info className="w-3.5 h-3.5 text-[#C05A3D]" />
+                    <span>{t.contact}</span>
+                  </button>
+                  <span className="opacity-30">•</span>
+                  <button
+                    onClick={() => setIsWeeklyOverviewModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#2D463E] hover:underline cursor-pointer"
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-[#C05A3D]" />
+                    <span>{t.weekScheduleBtn}</span>
+                  </button>
                 </li>
               </ul>
+            </div>
+
+            {/* Col 3: Dedicated Kitchen & Admin Area (Mục Quản Trị Bếp) */}
+            <div className="bg-[#E5E1D8]/60 p-4 sm:p-5 rounded-xl border border-black/10 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-[#C05A3D]" />
+                    <h4 className="font-sans text-xs font-bold uppercase tracking-[0.15em] text-[#1A1A1A]">
+                      {language === 'en' ? 'Kitchen & Staff Area' : 'Khu Vực Bếp & Quản Trị'}
+                    </h4>
+                  </div>
+                  {isAdminLoggedIn && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold font-sans flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      {language === 'en' ? 'Active' : 'Đang mở'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] font-sans text-[#1A1A1A]/70 leading-relaxed mb-3">
+                  {language === 'en'
+                    ? 'Dedicated for kitchen staff and managers to update dish availability, edit recipes and change pricing.'
+                    : 'Dành riêng cho nhân viên và bếp trưởng để cập nhật món còn/hết, sửa công thức và bảng giá.'}
+                </p>
+              </div>
+
+              {isAdminLoggedIn ? (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsAdminModalOpen(true)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#E5E1D8]" />
+                      <span>{t.kitchenBoardBtn}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingDish(null);
+                        setIsAddModalOpen(true);
+                      }}
+                      className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-[#C05A3D] hover:bg-[#A0452C] text-white text-xs font-sans font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                      title={t.addDishBtn}
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{t.addDishBtn}</span>
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleLogoutAdmin}
+                    className="w-full flex items-center justify-center gap-1 text-[11px] font-sans font-semibold text-red-600 hover:text-red-700 py-1 transition-colors cursor-pointer"
+                  >
+                    <span>{t.logout}</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-[#1A1A1A] hover:bg-[#C05A3D] text-white text-xs font-sans font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#E5E1D8]" />
+                  <span>{language === 'en' ? 'Kitchen Staff Login' : 'Đăng Nhập Quản Trị Bếp'}</span>
+                </button>
+              )}
             </div>
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-[#1A1A1A]/50">
             <p className="flex items-center gap-1.5 flex-wrap">
-              <span>{shopInfo.footerNote || `© ${new Date().getFullYear()} ${shopInfo.name} • Thực đơn món chay thanh tịnh`}</span>
+              <span>{localizedShopInfo.footerNote || (language === 'en' ? `© ${new Date().getFullYear()} ${localizedShopInfo.name} • Pure & Peaceful Vegetarian Menu` : `© ${new Date().getFullYear()} ${localizedShopInfo.name} • Thực đơn món chay thanh tịnh`)}</span>
               {isAdminLoggedIn && (
                 <button
                   onClick={() => setIsShopInfoModalOpen(true)}
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/5 hover:bg-black/10 text-[#C05A3D] text-[10px] font-bold cursor-pointer transition-colors"
-                  title="Bấm để chỉnh sửa dòng chữ chân trang"
+                  title="Sửa dòng chữ chân trang"
                 >
                   <Edit3 className="w-2.5 h-2.5" />
                   <span>Sửa</span>
                 </button>
               )}
             </p>
-            <p className="italic">Thanh Tịnh • An Nhiên • Dinh Dưỡng</p>
+            <p className="italic">
+              {language === 'en' ? 'Purity • Serenity • Wholesome Nutrition' : 'Thanh Tịnh • An Nhiên • Dinh Dưỡng'}
+            </p>
           </div>
         </div>
       </footer>
@@ -666,6 +790,7 @@ export default function App() {
         onOpenWeeklyOverview={() => setIsWeeklyOverviewModalOpen(true)}
         isAdminLoggedIn={isAdminLoggedIn}
         todayLabel={todayLabel}
+        language={language}
       />
 
       {/* Dish Detail Modal */}
@@ -680,6 +805,7 @@ export default function App() {
         }}
         isAdmin={isAdminLoggedIn}
         onRequireAdminLogin={() => setIsAuthModalOpen(true)}
+        language={language}
       />
 
       {/* Add / Edit Dish Modal */}
@@ -709,6 +835,7 @@ export default function App() {
           setIsShopInfoModalOpen(false);
           setIsAuthModalOpen(true);
         }}
+        language={language}
       />
 
       {/* Weekly Overview Modal */}
@@ -717,6 +844,7 @@ export default function App() {
         onClose={() => setIsWeeklyOverviewModalOpen(false)}
         dishes={dishes}
         onSelectDay={(day) => handleSelectDay(day)}
+        language={language}
       />
 
       {/* Admin Center Control Panel Modal */}
@@ -751,6 +879,7 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onSuccessLogin={handleSuccessLogin}
         currentPin={adminPin}
+        language={language}
       />
     </div>
   );

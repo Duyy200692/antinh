@@ -1,5 +1,6 @@
-import { DayOfWeek, DishCategory, DishItem } from '../types';
+import { DayOfWeek, DishCategory, DishItem, Language } from '../types';
 import { DAYS_OF_WEEK, CATEGORIES } from '../data/mockDishes';
+import { getLocalizedDayLabel, getLocalizedCategoryLabel, DISH_TRANSLATIONS_EN } from './i18n';
 
 export function getTodayDayOfWeek(): DayOfWeek {
   const dayIndex = new Date().getDay(); // 0 is Sunday, 1 is Monday...
@@ -22,12 +23,18 @@ export function getTodayDayOfWeek(): DayOfWeek {
   }
 }
 
-export function getDayLabel(dayId: DayOfWeek): string {
+export function getDayLabel(dayId: DayOfWeek, lang: Language = 'vi'): string {
+  if (lang === 'en') {
+    return getLocalizedDayLabel(dayId, 'en');
+  }
   const day = DAYS_OF_WEEK.find((d) => d.id === dayId);
   return day ? day.label : dayId;
 }
 
-export function getCategoryLabel(categoryId: DishCategory): string {
+export function getCategoryLabel(categoryId: DishCategory | 'all_categories', lang: Language = 'vi'): string {
+  if (lang === 'en') {
+    return getLocalizedCategoryLabel(categoryId, 'en');
+  }
   const cat = CATEGORIES.find((c) => c.id === categoryId);
   return cat ? cat.label : categoryId;
 }
@@ -37,14 +44,13 @@ export function filterDishes(
   selectedDay: DayOfWeek | 'today',
   selectedCategory: DishCategory | 'all_categories',
   searchQuery: string = '',
-  onlyAvailable: boolean = false
+  onlyAvailable: boolean = false,
+  lang: Language = 'vi'
 ): DishItem[] {
   const targetDay = selectedDay === 'today' ? getTodayDayOfWeek() : selectedDay;
 
   return dishes.filter((dish) => {
     // Check day availability:
-    // If targetDay is 'all' (Cả tuần), show only dishes that are available all week ('all' in availableDays)
-    // If targetDay is specific day (e.g., 't2'), show dishes for 't2' AND also all-week dishes ('all')
     const matchesDay =
       targetDay === 'all'
         ? dish.availableDays.includes('all')
@@ -54,14 +60,27 @@ export function filterDishes(
     const matchesCategory =
       selectedCategory === 'all_categories' || dish.category === selectedCategory;
 
-    // Check search query (match name, description, tags, unit):
+    // Check search query (match Vietnamese and English name, description, tags, unit):
     const query = (typeof searchQuery === 'string' ? searchQuery : '').trim().toLowerCase();
-    const matchesSearch =
-      query === '' ||
-      dish.name.toLowerCase().includes(query) ||
-      dish.description.toLowerCase().includes(query) ||
-      dish.tags.some((tag) => tag.toLowerCase().includes(query)) ||
-      dish.unit.toLowerCase().includes(query);
+    
+    let matchesSearch = query === '';
+    if (!matchesSearch) {
+      const enTrans = DISH_TRANSLATIONS_EN[dish.id];
+      const enName = (dish.nameEn || enTrans?.name || '').toLowerCase();
+      const enDesc = (dish.descriptionEn || enTrans?.description || '').toLowerCase();
+      const enUnit = (dish.unitEn || enTrans?.unit || '').toLowerCase();
+      const enTags = (enTrans?.tags || []).map((t) => t.toLowerCase());
+
+      matchesSearch =
+        dish.name.toLowerCase().includes(query) ||
+        dish.description.toLowerCase().includes(query) ||
+        dish.tags.some((tag) => tag.toLowerCase().includes(query)) ||
+        dish.unit.toLowerCase().includes(query) ||
+        enName.includes(query) ||
+        enDesc.includes(query) ||
+        enUnit.includes(query) ||
+        enTags.some((tag) => tag.includes(query));
+    }
 
     // Check availability stock toggle if onlyAvailable filter is checked:
     const matchesStock = onlyAvailable ? dish.isAvailableToday : true;

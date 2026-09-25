@@ -20,7 +20,9 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
   initialDish,
 }) => {
   const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
   const [price, setPrice] = useState('');
   const [unit, setUnit] = useState('Phần');
   const [category, setCategory] = useState<DishCategory>('daily_main');
@@ -62,7 +64,9 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
   useEffect(() => {
     if (initialDish) {
       setName(initialDish.name);
+      setNameEn(initialDish.nameEn || '');
       setDescription(initialDish.description);
+      setDescriptionEn(initialDish.descriptionEn || '');
       setPrice(initialDish.price);
       setUnit(initialDish.unit);
       setCategory(initialDish.category);
@@ -73,7 +77,9 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
       setIsAvailableToday(initialDish.isAvailableToday);
     } else {
       setName('');
+      setNameEn('');
       setDescription('');
+      setDescriptionEn('');
       setPrice('45.000đ');
       setUnit('Phần');
       setCategory('daily_main');
@@ -166,7 +172,9 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
     const dishItem: DishItem = {
       id: initialDish ? initialDish.id : `dish-${Date.now()}`,
       name: name.trim(),
+      nameEn: nameEn.trim() || undefined,
       description: description.trim(),
+      descriptionEn: descriptionEn.trim() || undefined,
       price: price.trim(),
       unit: unit.trim(),
       category,
@@ -319,6 +327,37 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
             />
+          </div>
+
+          {/* Tên & Mô tả tiếng Anh (Tùy chọn) */}
+          <div className="p-3.5 rounded-sm bg-[#F4F1EA] border border-black/10 space-y-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-sans font-bold uppercase tracking-wider text-[#2D463E]">
+              <span>🇬🇧 Tiếng Anh (Tùy chọn cho khách nước ngoài / song ngữ)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-sans font-semibold text-[#1A1A1A]/70 mb-1">
+                English Dish Name:
+              </label>
+              <input
+                type="text"
+                placeholder="VD: Crispy Fried Rice with Herbs..."
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-sm bg-[#FDFCFB] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D]"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-sans font-semibold text-[#1A1A1A]/70 mb-1">
+                English Description:
+              </label>
+              <textarea
+                rows={2}
+                placeholder="VD: Delicious vegetarian specialty made from..."
+                value={descriptionEn}
+                onChange={(e) => setDescriptionEn(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-sm bg-[#FDFCFB] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D]"
+              />
+            </div>
           </div>
 
           {/* Hình ảnh: Tải lên tự động nén WEBP hoặc nhập URL / chọn mẫu */}

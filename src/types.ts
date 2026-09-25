@@ -1,5 +1,7 @@
 export type DayOfWeek = 'all' | 't2' | 't3' | 't4' | 't5' | 't6' | 't7' | 'cn';
 
+export type Language = 'vi' | 'en';
+
 export type DishCategory = 
   | 'daily_main' 
   | 'ready_made' 
@@ -9,16 +11,21 @@ export type DishCategory =
 export interface DishItem {
   id: string;
   name: string;
+  nameEn?: string;
   description: string;
+  descriptionEn?: string;
   price: string;
   unit: string;
+  unitEn?: string;
   category: DishCategory;
   availableDays: DayOfWeek[]; // ['all'] means available every day of the week
   image: string;
   isAvailableToday: boolean;
   soldOutNote?: string; // e.g. "Hết sớm lúc 10:30" or "Tạm hết trong ngày"
+  soldOutNoteEn?: string;
   tags: string[];
   prepTime: string;
+  prepTimeEn?: string;
   isFeatured?: boolean;
 }
 

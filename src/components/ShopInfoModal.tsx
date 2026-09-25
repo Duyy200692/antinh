@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Phone, MapPin, Clock, ShieldCheck, HeartHandshake, Info, Store, Edit3, Save, CheckCircle2 } from 'lucide-react';
+import { X, Phone, MapPin, Clock, ShieldCheck, HeartHandshake, Info, Edit3, Save, CheckCircle2 } from 'lucide-react';
 import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
-import { ShopInfo } from '../types';
+import { ShopInfo, Language } from '../types';
+import { TRANSLATIONS, getLocalizedShopInfo } from '../utils/i18n';
 
 interface ShopInfoModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface ShopInfoModalProps {
   onOpenAdminModal?: () => void;
   isAdminLoggedIn?: boolean;
   onOpenAuthModal?: () => void;
+  language?: Language;
 }
 
 export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
@@ -18,9 +20,9 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
   onClose,
   shopInfo = DEFAULT_SHOP_INFO,
   onSaveShopInfo,
-  onOpenAdminModal,
   isAdminLoggedIn = false,
   onOpenAuthModal,
+  language = 'vi' as Language,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formName, setFormName] = useState(shopInfo.name);
@@ -31,6 +33,9 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
   const [formSlogan, setFormSlogan] = useState(shopInfo.slogan);
   const [formFooterNote, setFormFooterNote] = useState(shopInfo.footerNote || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const t = TRANSLATIONS[language];
+  const localizedInfo = getLocalizedShopInfo(shopInfo, language);
 
   // Sync state when shopInfo changes or modal opens
   React.useEffect(() => {
@@ -85,10 +90,10 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
             </div>
             <div>
               <h2 className="font-serif text-xl font-bold uppercase tracking-tight text-[#1A1A1A]">
-                {shopInfo.name}
+                {localizedInfo.name}
               </h2>
               <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-[#C05A3D] font-bold">
-                {isEditing ? 'Chỉnh Sửa Thông Tin Quán' : 'Thông Tin Bếp & Liên Hệ'}
+                {isEditing ? t.editShopInfoBtn : t.shopInfoSubtitle}
               </p>
             </div>
           </div>
@@ -98,6 +103,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
               onClose();
             }}
             className="w-8 h-8 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] flex items-center justify-center text-[#1A1A1A] transition-colors cursor-pointer"
+            aria-label={t.closeBtn}
           >
             <X className="w-4 h-4" />
           </button>
@@ -190,7 +196,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
 
             <div>
               <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                Dòng Chữ Chân Trang (Bản quyền / Database Note dưới cùng trang)
+                Dòng Chữ Chân Trang (Bản quyền / Note dưới cùng trang)
               </label>
               <input
                 type="text"
@@ -199,9 +205,6 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
                 onChange={(e) => setFormFooterNote(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
               />
-              <p className="text-[11px] text-[#1A1A1A]/60 mt-1">
-                Để trống nếu muốn tự động hiển thị theo định dạng chuẩn. Bạn có thể sửa thành bất kỳ nội dung nào bạn muốn!
-              </p>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10">
@@ -210,14 +213,14 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
                 onClick={() => setIsEditing(false)}
                 className="px-4 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] text-xs font-sans uppercase tracking-wider font-bold cursor-pointer"
               >
-                Hủy
+                {t.cancelBtn}
               </button>
               <button
                 type="submit"
                 className="px-5 py-2 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans uppercase tracking-wider font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
               >
                 <Save className="w-4 h-4 text-[#E5E1D8]" />
-                <span>Lưu Lên Firebase</span>
+                <span>{t.saveShopInfoBtn}</span>
               </button>
             </div>
           </form>
@@ -227,7 +230,7 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
             <div className="bg-[#F4F1EA] p-4 rounded-sm border-l-2 border-[#C05A3D] flex items-start gap-3">
               <Info className="w-5 h-5 text-[#C05A3D] shrink-0 mt-0.5" />
               <p className="text-xs leading-relaxed text-[#1A1A1A]/80 font-sans">
-                {shopInfo.slogan || 'App nội bộ dành cho nhân viên xem thực đơn hàng ngày, đặt xôi, bánh mì chà bông chay và nắm lịch món chính luân phiên của bếp ăn.'}
+                {localizedInfo.slogan}
               </p>
             </div>
 
@@ -236,19 +239,21 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
               <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5">
                 <div className="flex items-center gap-2 mb-2 text-xs font-sans uppercase tracking-wider font-bold text-[#C05A3D]">
                   <Clock className="w-4 h-4" />
-                  <span>Giờ Bếp Mở Cửa</span>
+                  <span>{t.shopHoursLabel}</span>
                 </div>
-                <p className="text-sm font-serif font-bold text-[#1A1A1A]">{shopInfo.openHours}</p>
-                <p className="text-xs text-[#1A1A1A]/60 mt-1">Phục vụ các ngày từ Thứ 2 - Chủ Nhật</p>
+                <p className="text-sm font-serif font-bold text-[#1A1A1A]">{localizedInfo.openHours}</p>
+                <p className="text-xs text-[#1A1A1A]/60 mt-1">
+                  {language === 'en' ? 'Serving Monday - Sunday' : 'Phục vụ các ngày từ Thứ 2 - Chủ Nhật'}
+                </p>
               </div>
 
               <div className="p-4 bg-[#F4F1EA] rounded-sm border border-black/5">
                 <div className="flex items-center gap-2 mb-2 text-xs font-sans uppercase tracking-wider font-bold text-[#2D463E]">
                   <Phone className="w-4 h-4" />
-                  <span>Người Phụ Trách</span>
+                  <span>{t.shopContactLabel}</span>
                 </div>
-                <p className="text-sm font-serif font-bold text-[#1A1A1A]">{shopInfo.contactPerson}</p>
-                <p className="text-xs text-[#1A1A1A]/80 font-mono mt-1">SĐT/Zalo: {shopInfo.phone}</p>
+                <p className="text-sm font-serif font-bold text-[#1A1A1A]">{localizedInfo.contactPerson}</p>
+                <p className="text-xs text-[#1A1A1A]/80 font-mono mt-1">{t.phonePrefix}: {localizedInfo.phone}</p>
               </div>
             </div>
 
@@ -257,37 +262,25 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
               <MapPin className="w-5 h-5 text-[#C05A3D] shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-xs font-sans uppercase tracking-wider font-bold text-[#1A1A1A] mb-1">
-                  Địa Chỉ Bếp Ăn
+                  {t.shopAddressLabel}
                 </h3>
-                <p className="text-sm text-[#1A1A1A]/80 font-serif">{shopInfo.address}</p>
+                <p className="text-sm text-[#1A1A1A]/80 font-serif">{localizedInfo.address}</p>
               </div>
             </div>
 
-            {/* Policies / Notes */}
+            {/* Highlights */}
             <div className="border-t border-black/10 pt-4 space-y-3">
               <h3 className="font-serif font-bold text-base text-[#1A1A1A] uppercase tracking-wide">
-                Lưu Ý Cho Nhân Viên & Đặt Món
+                {t.shopHighlightsLabel}
               </h3>
 
               <div className="space-y-2 text-xs text-[#1A1A1A]/80">
-                <div className="flex items-start gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#2D463E] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Món cố định:</strong> Xôi hạt sen, Xôi lá cẩm, Bánh mì chà bông nấm và các món làm sẵn có đủ các ngày trong tuần.
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <HeartHandshake className="w-4 h-4 text-[#C05A3D] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Món theo ngày:</strong> Bếp đổi món chính theo lịch (ví dụ Thứ 2: Bún bò huế chay, Thứ 4: Phở chay, Thứ 7: Cơm niêu, v.v.).
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-[#1A1A1A]/60 shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Báo số lượng:</strong> Vui lòng báo số lượng suất trước 09h00 sáng để bếp chuẩn bị đầy đủ và tươm tất.
-                  </span>
-                </div>
+                {localizedInfo.features && localizedInfo.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-[#2D463E] shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -302,14 +295,14 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
               className="px-4 py-2 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white font-sans uppercase tracking-wider font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Edit3 className="w-4 h-4 text-[#C05A3D]" />
-              <span>Chỉnh Sửa Thông Tin Quán</span>
+              <span>{t.editShopInfoBtn}</span>
             </button>
 
             <button
               onClick={onClose}
               className="px-6 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white font-sans uppercase tracking-wider font-bold text-xs transition-colors cursor-pointer"
             >
-              Đóng
+              {t.closeBtn}
             </button>
           </div>
         )}
@@ -317,5 +310,6 @@ export const ShopInfoModal: React.FC<ShopInfoModalProps> = ({
     </div>
   );
 };
+
 
 

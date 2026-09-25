@@ -1,20 +1,24 @@
 import React from 'react';
-import { DayOfWeek } from '../types';
+import { DayOfWeek, Language } from '../types';
 import { DAYS_OF_WEEK } from '../data/mockDishes';
 import { getTodayDayOfWeek, getDayLabel } from '../utils/dayUtils';
+import { getLocalizedDayShortLabel, TRANSLATIONS } from '../utils/i18n';
 import { Calendar, Clock } from 'lucide-react';
 
 interface DaySelectorProps {
   selectedDay: DayOfWeek | 'today';
   onSelectDay: (day: DayOfWeek | 'today') => void;
   dishesCountByDay: Record<string, number>;
+  language?: Language;
 }
 
 export const DaySelector: React.FC<DaySelectorProps> = ({
   selectedDay,
   onSelectDay,
   dishesCountByDay,
+  language = 'vi' as Language,
 }) => {
+  const t = TRANSLATIONS[language];
   const todayDay = getTodayDayOfWeek();
 
   return (
@@ -22,7 +26,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-2 mb-1.5 text-[9px] sm:text-[10px] font-sans font-bold text-[#1A1A1A]/50 uppercase tracking-[0.2em]">
           <Calendar className="w-3 h-3 text-[#C05A3D]" />
-          <span>Lọc theo ngày trong tuần:</span>
+          <span>{t.filterByDay}</span>
         </div>
 
         {/* Horizontal Scrollable Day Tabs */}
@@ -37,7 +41,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
             }`}
           >
             <Clock className="w-3 h-3" />
-            <span>Hôm nay ({getDayLabel(todayDay)})</span>
+            <span>{t.todayOption} ({getDayLabel(todayDay, language)})</span>
           </button>
 
           {/* Monday to Sunday Tabs */}
@@ -45,6 +49,7 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
             const isToday = day.id === todayDay;
             const isSelected = selectedDay === day.id;
             const count = dishesCountByDay[day.id] || 0;
+            const localizedShortLabel = getLocalizedDayShortLabel(day.id, language);
 
             return (
               <button
@@ -58,9 +63,9 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
                     : 'bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A]/80 border-black/5 font-semibold'
                 }`}
               >
-                <span>{day.shortLabel}</span>
+                <span>{localizedShortLabel}</span>
                 {isToday && !isSelected && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C05A3D]" title="Hôm nay" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C05A3D]" title={t.todayOption} />
                 )}
                 <span
                   className={`text-[9px] px-1 py-0.2 rounded-xs font-bold ${
@@ -81,3 +86,4 @@ export const DaySelector: React.FC<DaySelectorProps> = ({
     </div>
   );
 };
+

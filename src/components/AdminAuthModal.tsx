@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { X, Lock, ShieldCheck, KeyRound, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { X, ShieldCheck, KeyRound, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Language } from '../types';
+import { TRANSLATIONS } from '../utils/i18n';
 
 interface AdminAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccessLogin: () => void;
   currentPin?: string;
+  language?: Language;
 }
 
 export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
@@ -13,12 +16,15 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   onClose,
   onSuccessLogin,
   currentPin = '1234',
+  language = 'vi',
 }) => {
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   if (!isOpen) return null;
+
+  const t = TRANSLATIONS[language];
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +37,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
       setPin('');
       onSuccessLogin();
     } else {
-      setErrorMsg('Mật khẩu PIN không chính xác! Vui lòng thử lại.');
+      setErrorMsg(t.invalidPinError);
     }
   };
 
@@ -46,16 +52,17 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
             </div>
             <div>
               <h3 className="font-serif font-bold text-lg uppercase tracking-tight">
-                Đăng Nhập Quản Trị Bếp
+                {t.adminAuthTitle}
               </h3>
               <p className="font-sans text-[11px] text-[#E5E1D8]/80">
-                Xác thực quyền Admin để chỉnh sửa & thêm món
+                {t.adminAuthDesc}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-sm hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+            aria-label={t.cancelBtn}
           >
             <X className="w-5 h-5" />
           </button>
@@ -64,8 +71,10 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
         {/* Body */}
         <form onSubmit={handleLogin} className="p-6 space-y-4">
           <div className="bg-[#F4F1EA] p-3.5 rounded-sm border-l-2 border-[#C05A3D] text-xs font-sans text-[#1A1A1A]/80 leading-relaxed">
-            <p className="font-bold text-[#1A1A1A] mb-0.5">🔒 Quyền Truy Cập Nội Bộ Admin</p>
-            Khách hàng chỉ được xem thực đơn. Hãy nhập mã PIN quản trị viên để mở khoá các tính năng thêm món, sửa giá và báo hết hàng.
+            <p className="font-bold text-[#1A1A1A] mb-0.5">🔒 {language === 'en' ? 'Kitchen Management Security' : 'Quyền Truy Cập Nội Bộ Admin'}</p>
+            {language === 'en'
+              ? 'Guests can view the full menu. Please enter the management PIN to unlock editing dishes, prices and out-of-stock statuses.'
+              : 'Khách hàng chỉ được xem thực đơn. Hãy nhập mã PIN quản trị viên để mở khoá các tính năng thêm món, sửa giá và báo hết hàng.'}
           </div>
 
           {errorMsg && (
@@ -77,7 +86,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
           <div>
             <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1.5">
-              Mã PIN Quản Trị Bếp
+              {t.pinPlaceholder}
             </label>
             <div className="relative">
               <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
@@ -88,7 +97,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   setPin(e.target.value);
                   setErrorMsg('');
                 }}
-                placeholder="Nhập mã PIN quản trị"
+                placeholder={t.pinPlaceholder}
                 autoFocus
                 required
                 className="w-full pl-10 pr-10 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/15 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-mono tracking-widest"
@@ -103,9 +112,17 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
             </div>
             <p className="text-[11px] text-[#1A1A1A]/50 font-sans mt-1">
               {currentPin === '1234' ? (
-                <>* Nhập mã PIN quản lý để truy cập (mặc định: <strong className="text-[#C05A3D]">1234</strong>)</>
+                language === 'en' ? (
+                  <>* Enter administrative PIN (default: <strong className="text-[#C05A3D]">1234</strong>)</>
+                ) : (
+                  <>* Nhập mã PIN quản lý để truy cập (mặc định: <strong className="text-[#C05A3D]">1234</strong>)</>
+                )
               ) : (
-                <>* Nhập mã PIN quản lý của quán.</>
+                language === 'en' ? (
+                  <>* Enter configured shop management PIN.</>
+                ) : (
+                  <>* Nhập mã PIN quản lý của quán.</>
+                )
               )}
             </p>
           </div>
@@ -116,13 +133,13 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] font-sans text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer"
             >
-              Hủy
+              {t.cancelBtn}
             </button>
             <button
               type="submit"
               className="px-6 py-2 rounded-sm bg-[#C05A3D] hover:bg-[#a0452c] text-white font-sans text-xs uppercase tracking-wider font-bold shadow-md transition-colors cursor-pointer"
             >
-              Đăng Nhập Admin
+              {t.loginBtn}
             </button>
           </div>
         </form>
@@ -130,3 +147,4 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     </div>
   );
 };
+

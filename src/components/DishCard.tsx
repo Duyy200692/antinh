@@ -1,6 +1,7 @@
 import React from 'react';
-import { DishItem } from '../types';
+import { DishItem, Language } from '../types';
 import { getCategoryLabel, getDayLabel } from '../utils/dayUtils';
+import { getLocalizedDish, TRANSLATIONS } from '../utils/i18n';
 import { CheckCircle2, XCircle, Eye } from 'lucide-react';
 
 interface DishCardProps {
@@ -8,6 +9,7 @@ interface DishCardProps {
   onSelectDish: (dish: DishItem) => void;
   onToggleStock?: (dishId: string, e: React.MouseEvent) => void;
   isAdmin?: boolean;
+  language?: Language;
 }
 
 export const DishCard: React.FC<DishCardProps> = ({
@@ -15,7 +17,10 @@ export const DishCard: React.FC<DishCardProps> = ({
   onSelectDish,
   onToggleStock,
   isAdmin = false,
+  language = 'vi' as Language,
 }) => {
+  const t = TRANSLATIONS[language];
+  const localizedDish = getLocalizedDish(dish, language);
   const isAllWeek = dish.availableDays.includes('all');
 
   const getCategoryBadgeClass = (cat: DishItem['category']) => {
@@ -46,7 +51,7 @@ export const DishCard: React.FC<DishCardProps> = ({
         <div className="relative aspect-4/3 sm:aspect-16/10 w-full overflow-hidden bg-[#1A1A1A]/5 flex items-center justify-center">
           <img
             src={dish.image}
-            alt={dish.name}
+            alt={localizedDish.name}
             className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 ${
               !dish.isAvailableToday ? 'grayscale-[30%]' : ''
             }`}
@@ -60,16 +65,16 @@ export const DishCard: React.FC<DishCardProps> = ({
                 dish.category
               )}`}
             >
-              {getCategoryLabel(dish.category)}
+              {getCategoryLabel(dish.category, language)}
             </span>
 
             {isAllWeek ? (
               <span className="font-sans text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[#1A1A1A] text-[#E5E1D8] font-bold border border-black/20 shadow-xs">
-                Cố định cả tuần
+                {t.availableEveryDay}
               </span>
             ) : (
               <span className="font-sans text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[#C05A3D] text-white font-bold border border-black/20 shadow-xs">
-                {dish.availableDays.map((d) => getDayLabel(d)).join(', ')}
+                {dish.availableDays.map((d) => getDayLabel(d, language)).join(', ')}
               </span>
             )}
           </div>
@@ -83,15 +88,15 @@ export const DishCard: React.FC<DishCardProps> = ({
           {!dish.isAvailableToday && (
             <div className="absolute inset-0 bg-[#1A1A1A]/70 backdrop-blur-[1px] flex flex-col items-center justify-center p-3 text-center">
               <span className="px-3 py-1.5 rounded-sm bg-[#C05A3D] text-white font-sans font-bold text-xs uppercase tracking-widest shadow-lg transform -rotate-1 mb-1.5">
-                Tạm hết hôm nay
+                {t.soldOutToday}
               </span>
               {dish.soldOutNote ? (
                 <span className="px-2.5 py-1 rounded-sm bg-[#1A1A1A] text-white font-sans text-[11px] font-medium shadow-sm">
-                  {dish.soldOutNote}
+                  {language === 'en' && dish.soldOutNoteEn ? dish.soldOutNoteEn : dish.soldOutNote}
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-sm bg-black/60 text-[#E5E1D8] font-sans text-[10px] uppercase tracking-wider">
-                  Hết sớm trong ngày
+                  {t.soldOutEarly}
                 </span>
               )}
             </div>
@@ -102,12 +107,12 @@ export const DishCard: React.FC<DishCardProps> = ({
         <div className="p-4 sm:p-5">
           <div className="flex items-start justify-between gap-2 mb-1.5">
             <h3 className="font-serif font-bold text-[#1A1A1A] text-base sm:text-lg leading-snug group-hover:text-[#C05A3D] transition-colors line-clamp-2">
-              {dish.name}
+              {localizedDish.name}
             </h3>
           </div>
 
           <p className="font-sans text-[#1A1A1A]/70 text-xs leading-relaxed line-clamp-2">
-            {dish.description}
+            {localizedDish.description}
           </p>
         </div>
       </div>
@@ -119,7 +124,7 @@ export const DishCard: React.FC<DishCardProps> = ({
             {dish.price}
           </span>
           <span className="font-sans text-[11px] uppercase tracking-wider text-[#1A1A1A]/50 ml-1">
-            / {dish.unit}
+            / {localizedDish.unit}
           </span>
         </div>
 
@@ -132,17 +137,17 @@ export const DishCard: React.FC<DishCardProps> = ({
                 ? 'bg-[#2D463E] text-white hover:bg-[#1f332d]'
                 : 'bg-[#C05A3D] text-white hover:bg-[#a0452c]'
             }`}
-            title="Admin: Bấm để chuyển trạng thái Có sẵn / Hết sớm"
+            title="Admin"
           >
             {dish.isAvailableToday ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Sẵn có</span>
+                <span>{t.inStockBadge}</span>
               </>
             ) : (
               <>
                 <XCircle className="w-3.5 h-3.5" />
-                <span>Hết sớm</span>
+                <span>{t.soldOutBadge}</span>
               </>
             )}
           </button>
@@ -151,12 +156,12 @@ export const DishCard: React.FC<DishCardProps> = ({
             {dish.isAvailableToday ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-[#2D463E]/10 text-[#2D463E] font-sans text-[11px] font-bold uppercase tracking-wider">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Có sẵn</span>
+                <span>{t.inStockBadge}</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-[#C05A3D]/10 text-[#C05A3D] font-sans text-[11px] font-bold uppercase tracking-wider">
                 <XCircle className="w-3.5 h-3.5" />
-                <span>Tạm hết</span>
+                <span>{t.soldOutBadge}</span>
               </span>
             )}
           </div>
@@ -165,4 +170,5 @@ export const DishCard: React.FC<DishCardProps> = ({
     </div>
   );
 };
+
 

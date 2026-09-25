@@ -1,6 +1,7 @@
 import React from 'react';
-import { DishItem } from '../types';
+import { DishItem, Language } from '../types';
 import { getCategoryLabel, getDayLabel } from '../utils/dayUtils';
+import { getLocalizedDish, TRANSLATIONS } from '../utils/i18n';
 import { X, CheckCircle2, XCircle, Clock, Edit3, PhoneCall, ShieldCheck } from 'lucide-react';
 import { SHOP_INFO } from '../data/mockDishes';
 
@@ -11,6 +12,7 @@ interface DishDetailModalProps {
   onEditDish: (dish: DishItem) => void;
   isAdmin?: boolean;
   onRequireAdminLogin?: () => void;
+  language?: Language;
 }
 
 export const DishDetailModal: React.FC<DishDetailModalProps> = ({
@@ -20,9 +22,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   onEditDish,
   isAdmin = false,
   onRequireAdminLogin,
+  language = 'vi' as Language,
 }) => {
   if (!dish) return null;
 
+  const t = TRANSLATIONS[language];
+  const localizedDish = getLocalizedDish(dish, language);
   const isAllWeek = dish.availableDays.includes('all');
 
   return (
@@ -32,7 +37,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         <div className="relative h-64 sm:h-80 w-full bg-[#E5E1D8] shrink-0">
           <img
             src={dish.image}
-            alt={dish.name}
+            alt={localizedDish.name}
             className="w-full h-full object-cover"
           />
 
@@ -42,6 +47,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-black/70 text-white hover:bg-black transition-colors cursor-pointer z-10"
+            aria-label={t.closeBtn}
           >
             <X className="w-5 h-5" />
           </button>
@@ -49,15 +55,15 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           {/* Category Badge on Top Left */}
           <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 rounded-sm bg-[#2D463E] text-white font-sans text-xs uppercase tracking-wider font-bold shadow-xs">
-              {getCategoryLabel(dish.category)}
+              {getCategoryLabel(dish.category, language)}
             </span>
             {isAllWeek ? (
               <span className="px-3 py-1 rounded-sm bg-[#1A1A1A] text-[#E5E1D8] font-sans text-xs uppercase tracking-wider font-bold shadow-xs">
-                Cố định bán cả tuần
+                {t.availableEveryDay}
               </span>
             ) : (
               <span className="px-3 py-1 rounded-sm bg-[#C05A3D] text-white font-sans text-xs uppercase tracking-wider font-bold shadow-xs">
-                Áp dụng: {dish.availableDays.map((d) => getDayLabel(d)).join(', ')}
+                {dish.availableDays.map((d) => getDayLabel(d, language)).join(', ')}
               </span>
             )}
           </div>
@@ -65,13 +71,13 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           {/* Title & Price overlay on bottom left of image */}
           <div className="absolute bottom-4 left-4 right-4 text-white">
             <h2 className="text-2xl sm:text-3xl font-serif font-black leading-tight mb-1 uppercase tracking-tight">
-              {dish.name}
+              {localizedDish.name}
             </h2>
             <div className="flex items-center gap-2">
               <span className="text-[#E5E1D8] font-serif font-bold text-xl sm:text-2xl">
                 {dish.price}
               </span>
-              <span className="text-white/80 font-sans text-xs uppercase tracking-wider">/ {dish.unit}</span>
+              <span className="text-white/80 font-sans text-xs uppercase tracking-wider">/ {localizedDish.unit}</span>
             </div>
           </div>
         </div>
@@ -84,38 +90,38 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               {dish.isAvailableToday ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-[#2D463E] text-white font-sans text-xs uppercase tracking-wider font-bold">
                   <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span>Đang Có Sẵn Trong Quán</span>
+                  <span>{t.currentlyAvailable}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-[#C05A3D] text-white font-sans text-xs uppercase tracking-wider font-bold">
                   <XCircle className="w-4 h-4 text-white" />
-                  <span>Tạm Hết Món Hôm Nay</span>
+                  <span>{t.currentlySoldOut}</span>
                 </span>
               )}
             </div>
 
             <div className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider font-semibold text-[#1A1A1A]/70">
               <Clock className="w-4 h-4 text-[#C05A3D]" />
-              <span>Thời gian chuẩn bị: {dish.prepTime}</span>
+              <span>{t.prepTimeLabel} {localizedDish.prepTime}</span>
             </div>
           </div>
 
           {/* Description */}
           <div>
             <h4 className="text-xs font-sans font-bold uppercase tracking-[0.25em] text-[#C05A3D] mb-2">
-              Mô Tả Món Ăn & Nguyên Liệu
+              {t.dishDescriptionLabel}
             </h4>
             <p className="text-[#1A1A1A]/80 font-sans text-sm sm:text-base leading-relaxed bg-[#F4F1EA] p-4 rounded-sm border border-black/5">
-              {dish.description}
+              {localizedDish.description}
             </p>
           </div>
 
           {/* Ordering Callout */}
           <div className="p-4 rounded-sm bg-[#F4F1EA] border border-black/10 flex items-center justify-between gap-3">
             <div className="text-xs sm:text-sm font-sans">
-              <p className="font-bold text-[#1A1A1A]">Đặt món hoặc xôi số lượng lớn?</p>
+              <p className="font-bold text-[#1A1A1A]">{t.orderNoticeTitle}</p>
               <p className="text-[#1A1A1A]/70 text-xs mt-0.5">
-                Liên hệ trực tiếp {SHOP_INFO.contactPerson} ({SHOP_INFO.phone}) • {SHOP_INFO.address}
+                {t.contactPersonPrefix}: {SHOP_INFO.contactPerson} ({SHOP_INFO.phone}) • {SHOP_INFO.address}
               </p>
             </div>
             <a
@@ -123,7 +129,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               className="px-4 py-2 rounded-sm bg-[#2D463E] hover:bg-[#1f332d] text-white font-sans uppercase tracking-wider font-bold text-xs flex items-center gap-1.5 shadow-xs shrink-0 transition-colors"
             >
               <PhoneCall className="w-4 h-4 text-[#C05A3D]" />
-              <span>Gọi ngay</span>
+              <span>{t.callToOrderBtn}</span>
             </a>
           </div>
         </div>
@@ -143,12 +149,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 {dish.isAvailableToday ? (
                   <>
                     <XCircle className="w-4 h-4" />
-                    <span>Báo Hết Sớm</span>
+                    <span>{t.toggleStockQuickBtn(true)}</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Báo Có Món Lại</span>
+                    <span>{t.toggleStockQuickBtn(false)}</span>
                   </>
                 )}
               </button>
@@ -161,12 +167,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 className="px-4 py-2 rounded-sm bg-[#E5E1D8] hover:bg-[#D9D1C2] text-[#1A1A1A] text-xs sm:text-sm font-sans uppercase tracking-wider font-bold transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Edit3 className="w-4 h-4 text-[#C05A3D]" />
-                <span>Sửa Món</span>
+                <span>{t.editDishBtn}</span>
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-xs font-sans text-[#1A1A1A]/60">
-              <span className="italic">Chế độ xem khách hàng</span>
+              <span className="italic">{t.guestViewBadge}</span>
               {onRequireAdminLogin && (
                 <button
                   onClick={() => {
@@ -176,7 +182,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                   className="px-3 py-1.5 rounded-sm bg-[#1A1A1A] text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 hover:bg-[#2D463E] transition-colors cursor-pointer"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-[#C05A3D]" />
-                  <span>Đăng Nhập Admin</span>
+                  <span>{t.loginAdmin}</span>
                 </button>
               )}
             </div>
@@ -186,11 +192,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             onClick={onClose}
             className="px-6 py-2 rounded-sm bg-[#1A1A1A] hover:bg-[#2D463E] text-white text-xs sm:text-sm font-sans uppercase tracking-wider font-bold transition-colors cursor-pointer"
           >
-            Đóng
+            {t.closeBtn}
           </button>
         </div>
       </div>
     </div>
   );
 };
+
 

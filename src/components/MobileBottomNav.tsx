@@ -1,5 +1,7 @@
 import React from 'react';
 import { Sparkles, Layers, Search, Info, ShieldCheck, Calendar } from 'lucide-react';
+import { Language } from '../types';
+import { TRANSLATIONS } from '../utils/i18n';
 
 interface MobileBottomNavProps {
   mainTab: 'today' | 'fixed' | 'all';
@@ -10,6 +12,7 @@ interface MobileBottomNavProps {
   onOpenWeeklyOverview: () => void;
   isAdminLoggedIn: boolean;
   todayLabel: string;
+  language?: Language;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
@@ -20,8 +23,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onOpenAdmin,
   onOpenWeeklyOverview,
   isAdminLoggedIn,
-  todayLabel,
+  language = 'vi',
 }) => {
+  const t = TRANSLATIONS[language];
+
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#1A1A1A]/95 text-[#FDFCFB] backdrop-blur-lg border-t border-white/10 shadow-2xl pb-safe">
       <div className="grid grid-cols-5 items-center justify-around h-15 px-1">
@@ -39,7 +44,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             )}
           </div>
           <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
-            Hôm Nay
+            {t.navToday}
           </span>
         </button>
 
@@ -57,7 +62,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             )}
           </div>
           <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
-            Cố Định
+            {t.navFixed}
           </span>
         </button>
 
@@ -68,7 +73,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           <Search className="w-5 h-5 text-[#E5E1D8]" />
           <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
-            Tìm Kiếm
+            {t.navSearch}
           </span>
         </button>
 
@@ -79,28 +84,37 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           <Info className="w-5 h-5 text-[#E5E1D8]" />
           <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
-            Quán
+            {t.navShop}
           </span>
         </button>
 
-        {/* Tab 5: Admin Control */}
-        <button
-          onClick={onOpenAdmin}
-          className={`flex flex-col items-center justify-center h-full transition-all cursor-pointer ${
-            isAdminLoggedIn ? 'text-[#C05A3D]' : 'text-white/60 hover:text-white'
-          }`}
-        >
-          <div className="relative">
-            <ShieldCheck className="w-5 h-5" />
-            {isAdminLoggedIn && (
+        {/* Tab 5: Weekly Overview for customers, or Kitchen Control when Admin is logged in */}
+        {isAdminLoggedIn ? (
+          <button
+            onClick={onOpenAdmin}
+            className="flex flex-col items-center justify-center h-full transition-all cursor-pointer text-[#C05A3D]"
+          >
+            <div className="relative">
+              <ShieldCheck className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            )}
-          </div>
-          <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
-            {isAdminLoggedIn ? 'Bếp Admin' : 'Đăng Nhập'}
-          </span>
-        </button>
+            </div>
+            <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
+              {t.navAdminLoggedIn}
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={onOpenWeeklyOverview}
+            className="flex flex-col items-center justify-center h-full text-white/60 hover:text-white transition-all cursor-pointer"
+          >
+            <Calendar className="w-5 h-5 text-[#E5E1D8]" />
+            <span className="text-[10px] font-sans font-bold uppercase tracking-tight mt-1">
+              {t.weekScheduleBtn}
+            </span>
+          </button>
+        )}
       </div>
     </nav>
   );
 };
+
