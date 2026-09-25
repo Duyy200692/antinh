@@ -43,7 +43,7 @@ export const DishCard: React.FC<DishCardProps> = ({
     >
       {/* Top Image Container */}
       <div>
-        <div className="relative aspect-16/10 w-full overflow-hidden bg-[#E5E1D8]">
+        <div className="relative aspect-4/3 sm:aspect-16/10 w-full overflow-hidden bg-[#1A1A1A]/5 flex items-center justify-center">
           <img
             src={dish.image}
             alt={dish.name}
