@@ -129,9 +129,12 @@ export default function App() {
     // Subscribe to Firestore Shop Info
     const unsubscribeShop = subscribeToShopInfo((remoteShop) => {
       if (remoteShop && remoteShop.name) {
-        setShopInfo(remoteShop);
+        setShopInfo((prev) => ({
+          ...remoteShop,
+          logoUrl: remoteShop.logoUrl || prev.logoUrl || DEFAULT_SHOP_INFO.logoUrl,
+        }));
       } else {
-        saveShopInfoToFirestore(DEFAULT_SHOP_INFO);
+        saveShopInfoToFirestore(shopInfo);
       }
     });
 
