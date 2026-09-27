@@ -835,6 +835,11 @@ export default function App() {
         }}
         shopInfo={shopInfo}
         language={language}
+        isAdminLoggedIn={isAdminLoggedIn}
+        onRequireAdminLogin={() => {
+          setIsStickyRiceModalOpen(false);
+          setIsAuthModalOpen(true);
+        }}
       />
 
       {/* Dish Detail Modal */}

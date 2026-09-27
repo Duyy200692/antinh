@@ -15,6 +15,7 @@ import {
   Upload,
   Loader2,
   Image as ImageIcon,
+  ShieldCheck,
 } from 'lucide-react';
 import { DishItem, StickyRiceCategoryInfo, ShopInfo, Language } from '../types';
 import { DEFAULT_STICKY_RICE_CATEGORY_INFO } from '../data/mockDishes';
@@ -32,6 +33,8 @@ interface StickyRiceOrderModalProps {
   onOpenAddDishModal: (initialDish?: DishItem | null) => void;
   shopInfo?: ShopInfo;
   language?: Language;
+  isAdminLoggedIn?: boolean;
+  onRequireAdminLogin?: () => void;
 }
 
 export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
@@ -46,6 +49,8 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
   onOpenAddDishModal,
   shopInfo,
   language = 'vi',
+  isAdminLoggedIn = false,
+  onRequireAdminLogin,
 }) => {
   // Category Edit State
   const [isEditingCategory, setIsEditingCategory] = useState(false);
@@ -277,20 +282,34 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsEditingCategory(!isEditingCategory)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                isEditingCategory
-                  ? 'bg-amber-500 text-black hover:bg-amber-400'
-                  : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
-              }`}
-              title="Chỉnh sửa thông tin danh mục"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {isEditingCategory ? 'Đang sửa danh mục' : 'Sửa danh mục'}
-              </span>
-            </button>
+            {isAdminLoggedIn ? (
+              <button
+                onClick={() => setIsEditingCategory(!isEditingCategory)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  isEditingCategory
+                    ? 'bg-amber-500 text-black hover:bg-amber-400'
+                    : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
+                }`}
+                title="Chỉnh sửa thông tin danh mục"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {isEditingCategory ? 'Đang sửa danh mục' : 'Sửa danh mục'}
+                </span>
+              </button>
+            ) : onRequireAdminLogin ? (
+              <button
+                onClick={() => {
+                  onClose();
+                  onRequireAdminLogin();
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 text-xs font-sans font-medium flex items-center gap-1.5 border border-white/10 transition-colors cursor-pointer"
+                title="Đăng nhập tài khoản Quản trị viên để chỉnh sửa"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#C05A3D]" />
+                <span className="hidden sm:inline">Quản trị</span>
+              </button>
+            ) : null}
 
             <button
               onClick={onClose}
@@ -313,7 +332,7 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
 
           {/* 1. Category Information Section */}
           <div className="bg-[#F4F1EA] rounded-xl border border-black/10 p-4 sm:p-5 shadow-xs">
-            {!isEditingCategory ? (
+            {(!isEditingCategory || !isAdminLoggedIn) ? (
               // Display Category Information
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -326,13 +345,15 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => setIsEditingCategory(true)}
-                    className="self-start px-3 py-1.5 rounded-lg bg-[#C05A3D]/10 hover:bg-[#C05A3D]/20 text-[#C05A3D] text-xs font-sans font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#C05A3D]/20"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Sửa thông tin danh mục</span>
-                  </button>
+                  {isAdminLoggedIn && (
+                    <button
+                      onClick={() => setIsEditingCategory(true)}
+                      className="self-start px-3 py-1.5 rounded-lg bg-[#C05A3D]/10 hover:bg-[#C05A3D]/20 text-[#C05A3D] text-xs font-sans font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#C05A3D]/20"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Sửa thông tin danh mục</span>
+                    </button>
+                  )}
                 </div>
 
                 <p className="text-xs sm:text-[13px] leading-relaxed text-[#1A1A1A]/80 font-sans">
@@ -526,21 +547,23 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleAddNewDish}
-                  className="px-3.5 py-1.5 rounded-lg bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Thêm Món Xôi Mới</span>
-                </button>
-              </div>
+              {isAdminLoggedIn && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleAddNewDish}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#2D463E] hover:bg-[#1f332d] text-white text-xs font-sans font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Thêm Món Xôi Mới</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Dishes Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {stickyRiceDishes.map((dish) => {
-                const isEditingThis = editingDishId === dish.id;
+                const isEditingThis = isAdminLoggedIn && editingDishId === dish.id;
                 const currentQty = orderCart[dish.id] || 0;
 
                 return (
@@ -617,46 +640,58 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
 
                         {/* Card Footer Controls: Edit dish, Toggle stock, and Quick Order quantity */}
                         <div className="pt-2 border-t border-black/5 flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            {/* Stock Toggle Button */}
-                            <button
-                              onClick={() => onToggleStock(dish.id)}
-                              className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-bold transition-colors cursor-pointer ${
-                                dish.isAvailableToday
-                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                  : 'bg-red-100 text-red-800 hover:bg-red-200'
-                              }`}
-                              title="Bật/Tắt còn hàng"
-                            >
-                              {dish.isAvailableToday ? '✓ Đang có sẵn' : '✕ Báo tạm hết'}
-                            </button>
+                          {isAdminLoggedIn ? (
+                            <div className="flex items-center gap-1.5">
+                              {/* Stock Toggle Button */}
+                              <button
+                                onClick={() => onToggleStock(dish.id)}
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-bold transition-colors cursor-pointer ${
+                                  dish.isAvailableToday
+                                    ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                    : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                }`}
+                                title="Bật/Tắt còn hàng"
+                              >
+                                {dish.isAvailableToday ? '✓ Có sẵn' : '✕ Báo hết'}
+                              </button>
 
-                            {/* Edit Dish Button */}
-                            <button
-                              onClick={() => handleStartEditDish(dish)}
-                              className="px-2.5 py-1 rounded-md bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A] text-[11px] font-sans font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                              title="Chỉnh sửa thông tin món này"
-                            >
-                              <Edit3 className="w-3 h-3 text-[#C05A3D]" />
-                              <span>Sửa món</span>
-                            </button>
+                              {/* Edit Dish Button */}
+                              <button
+                                onClick={() => handleStartEditDish(dish)}
+                                className="px-2.5 py-1 rounded-md bg-[#F4F1EA] hover:bg-[#E5E1D8] text-[#1A1A1A] text-[11px] font-sans font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                title="Chỉnh sửa thông tin món này"
+                              >
+                                <Edit3 className="w-3 h-3 text-[#C05A3D]" />
+                                <span>Sửa món</span>
+                              </button>
 
-                            {/* Delete Dish Button */}
-                            <button
-                              onClick={() => {
-                                if (confirm(`Xác nhận xóa món "${dish.name}" khỏi danh mục đặt xôi?`)) {
-                                  onDeleteDish(dish.id);
-                                }
-                              }}
-                              className="p-1 rounded-md text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                              title="Xóa món này"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                              {/* Delete Dish Button */}
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Xác nhận xóa món "${dish.name}" khỏi danh mục đặt xôi?`)) {
+                                    onDeleteDish(dish.id);
+                                  }
+                                }}
+                                className="p-1 rounded-md text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                                title="Xóa món này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-[#1A1A1A]/60 font-sans font-medium">
+                                {dish.isAvailableToday ? (
+                                  <span className="text-emerald-700">✓ Sẵn sàng nhận đơn</span>
+                                ) : (
+                                  <span className="text-red-600">✕ Tạm hết hôm nay</span>
+                                )}
+                              </span>
+                            </div>
+                          )}
 
                           {/* Quick Order Quantity Counter */}
-                          <div className="flex items-center gap-1 bg-[#F4F1EA] p-0.5 rounded-lg border border-black/10">
+                          <div className="flex items-center gap-1 bg-[#F4F1EA] p-0.5 rounded-lg border border-black/10 ml-auto">
                             <button
                               onClick={() => updateQuantity(dish.id, -1)}
                               disabled={currentQty === 0}
@@ -669,7 +704,8 @@ export const StickyRiceOrderModal: React.FC<StickyRiceOrderModalProps> = ({
                             </span>
                             <button
                               onClick={() => updateQuantity(dish.id, 1)}
-                              className="w-6 h-6 rounded-md bg-[#C05A3D] text-white hover:bg-[#A0452C] text-xs font-bold flex items-center justify-center cursor-pointer transition-colors"
+                              disabled={!dish.isAvailableToday}
+                              className="w-6 h-6 rounded-md bg-[#C05A3D] text-white hover:bg-[#A0452C] disabled:opacity-40 text-xs font-bold flex items-center justify-center cursor-pointer transition-colors"
                             >
                               +
                             </button>
