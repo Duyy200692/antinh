@@ -82,13 +82,32 @@ export const CartModal: React.FC<CartModalProps> = ({
     return text;
   };
 
+  const [zaloSentNotice, setZaloSentNotice] = useState(false);
+
   const handleSendZalo = () => {
     const billText = generateBillText();
-    const encoded = encodeURIComponent(billText);
-    const targetZalo = shopInfo.zaloPhone || shopInfo.phone;
-    const zaloPhone = targetZalo.replace(/[^0-9]/g, '');
-    const zaloUrl = `https://zalo.me/${zaloPhone}?text=${encoded}`;
-    window.open(zaloUrl, '_blank');
+    // 1. Luôn sao chép nội dung Bill vào bộ nhớ tạm trước
+    navigator.clipboard.writeText(billText).then(() => {
+      setCopied(true);
+      setZaloSentNotice(true);
+      setTimeout(() => setCopied(false), 5000);
+    });
+
+    // 2. Tạo link Zalo sạch chuẩn (Tuyệt đối không đính kèm query param ?text= vì Zalo cá nhân sẽ báo lỗi 404 trang không hợp lệ)
+    const targetZalo = (shopInfo.zaloPhone || shopInfo.phone || '').trim();
+    let zaloUrl = '';
+    if (targetZalo.startsWith('http://') || targetZalo.startsWith('https://')) {
+      zaloUrl = targetZalo;
+    } else {
+      const cleanPhone = targetZalo.replace(/[^0-9]/g, '');
+      if (cleanPhone) {
+        zaloUrl = `https://zalo.me/${cleanPhone}`;
+      }
+    }
+
+    if (zaloUrl) {
+      window.open(zaloUrl, '_blank');
+    }
   };
 
   const handleCopyBill = () => {
@@ -271,6 +290,25 @@ export const CartModal: React.FC<CartModalProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Zalo Sent Notification Toast */}
+              {zaloSentNotice && (
+                <div className="p-3.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs flex items-center justify-between gap-2 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>
+                      📋 <strong>Đã sao chép Hóa đơn!</strong> Đang mở Zalo, quý khách chỉ cần bấm <strong>Dán (Paste)</strong> vào khung chat và nhấn gửi.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setZaloSentNotice(false)}
+                    className="text-blue-500 hover:text-blue-800 text-xs font-bold px-2 py-1"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

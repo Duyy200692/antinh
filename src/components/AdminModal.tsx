@@ -682,10 +682,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
               <div>
                 <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#2D463E] mb-1 flex items-center justify-between">
-                  <span>Số Điện Thoại Zalo Nhận Đơn (Bill) *</span>
+                  <span>Số Điện Thoại / Link Zalo Nhận Đơn (Bill) *</span>
                   {formZaloPhone && (
                     <a
-                      href={`https://zalo.me/${formZaloPhone.replace(/[^0-9]/g, '')}`}
+                      href={formZaloPhone.trim().startsWith('http') ? formZaloPhone.trim() : `https://zalo.me/${formZaloPhone.replace(/[^0-9]/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[11px] text-[#0068FF] hover:underline normal-case font-bold flex items-center gap-1"
@@ -698,12 +698,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   type="text"
                   value={formZaloPhone}
                   onChange={(e) => setFormZaloPhone(e.target.value)}
-                  placeholder="VD: 0909 310 567"
+                  placeholder="Nhập số ĐT (VD: 0912345678) hoặc link Zalo"
                   className="w-full px-4 py-2.5 rounded-sm bg-white border border-[#2D463E]/30 text-[#1A1A1A] text-sm focus:outline-none focus:ring-2 focus:ring-[#0068FF] font-sans font-bold"
                 />
-                <p className="text-[11px] text-[#1A1A1A]/70 font-sans mt-1">
-                  💡 <strong>Cơ chế tự động:</strong> Khách chọn món và bấm "Gửi Bill qua Zalo", hệ thống sẽ tự động mở ứng dụng Zalo trên máy khách và chuyển thẳng toàn bộ hóa đơn vào số Zalo này. <em>Chủ quán không cần phải đăng nhập tài khoản Zalo vào trang web</em> (đảm bảo bảo mật tối đa).
-                </p>
+                <div className="text-[11px] text-[#1A1A1A]/75 font-sans mt-1.5 space-y-1 bg-amber-50/70 p-2.5 rounded border border-amber-200/60">
+                  <p className="font-bold text-[#1A1A1A]">💡 Nếu Zalo báo "Trang không tìm thấy hoặc không hợp lệ":</p>
+                  <p>1. Hãy đổi số điện thoại mẫu sang <strong>Số điện thoại Zalo thật của bạn</strong> và bấm Lưu.</p>
+                  <p>2. Trên điện thoại của bạn, mở Zalo ➔ <strong>Cài đặt ⚙️</strong> ➔ <strong>Quyền riêng tư</strong> ➔ <strong>Quản lý nguồn tìm kiếm</strong> ➔ Bật gạt xanh mục <strong>"Số điện thoại"</strong> để Zalo cho phép mở chat từ link.</p>
+                </div>
               </div>
 
               <div>
