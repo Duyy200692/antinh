@@ -1,5 +1,22 @@
 import React, { useState } from 'react';
-import { X, ShoppingBag, Trash2, Plus, Minus, Send, Copy, Check, MessageCircle, Phone, MapPin, User, FileText } from 'lucide-react';
+import {
+  X,
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus,
+  Send,
+  Copy,
+  Check,
+  MessageCircle,
+  Phone,
+  MapPin,
+  User,
+  FileText,
+  ExternalLink,
+  HelpCircle,
+  Smartphone,
+} from 'lucide-react';
 import { CartItem, ShopInfo, Language } from '../types';
 import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
 
@@ -30,6 +47,7 @@ export const CartModal: React.FC<CartModalProps> = ({
   const [generalNote, setGeneralNote] = useState('');
   const [copied, setCopied] = useState(false);
   const [zaloSentNotice, setZaloSentNotice] = useState(false);
+  const [showZaloGuide, setShowZaloGuide] = useState(false);
 
   if (!isOpen) return null;
 
@@ -83,30 +101,71 @@ export const CartModal: React.FC<CartModalProps> = ({
     return text;
   };
 
-  const handleSendZalo = () => {
-    const billText = generateBillText();
-    // 1. Luôn sao chép nội dung Bill vào bộ nhớ tạm trước
-    navigator.clipboard.writeText(billText).then(() => {
-      setCopied(true);
-      setZaloSentNotice(true);
-      setTimeout(() => setCopied(false), 5000);
-    });
-
-    // 2. Tạo link Zalo sạch chuẩn (Tuyệt đối không đính kèm query param ?text= vì Zalo cá nhân sẽ báo lỗi 404 trang không hợp lệ)
+  const getZaloTargetUrl = () => {
     const targetZalo = (shopInfo.zaloPhone || shopInfo.phone || '').trim();
-    let zaloUrl = '';
     if (targetZalo.startsWith('http://') || targetZalo.startsWith('https://')) {
-      zaloUrl = targetZalo;
-    } else {
-      const cleanPhone = targetZalo.replace(/[^0-9]/g, '');
-      if (cleanPhone) {
-        zaloUrl = `https://zalo.me/${cleanPhone}`;
+      return targetZalo;
+    }
+    const cleanPhone = targetZalo.replace(/[^0-9]/g, '');
+    return cleanPhone ? `https://zalo.me/${cleanPhone}` : '';
+  };
+
+  const handleSendZalo = async () => {
+    const billText = generateBillText();
+    // 1. Luôn tự động sao chép nội dung Bill vào bộ nhớ tạm trước để dự phòng
+    try {
+      await navigator.clipboard.writeText(billText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 4000);
+    } catch {
+      // ignore
+    }
+
+    // 2. Ưu tiên tính năng Chia Sẻ Hệ Thống (Web Share API) trên điện thoại:
+    // Khách chọn Zalo là Zalo tự động điền 100% Bill vào tin nhắn, không cần Paste!
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Hóa đơn đặt món - ${shopInfo.name}`,
+          text: billText,
+        });
+        return;
+      } catch (err: any) {
+        // Nếu người dùng hủy hoặc trình duyệt không hỗ trợ, mở hộp thoại hướng dẫn
+        if (err.name !== 'AbortError') {
+          setShowZaloGuide(true);
+        }
+        return;
       }
     }
 
-    if (zaloUrl) {
-      window.open(zaloUrl, '_blank');
+    // 3. Nếu thiết bị không có Web Share (VD: trên máy tính để bàn), mở hộp thoại hướng dẫn 2 bước
+    setShowZaloGuide(true);
+  };
+
+  const handleOpenZaloNow = () => {
+    const billText = generateBillText();
+    navigator.clipboard.writeText(billText).then(() => {
+      setCopied(true);
+    });
+    const url = getZaloTargetUrl();
+    if (url) {
+      window.open(url, '_blank');
     }
+  };
+
+  const handleCallShop = () => {
+    const cleanPhone = (shopInfo.phone || shopInfo.zaloPhone || '').replace(/[^0-9]/g, '');
+    if (cleanPhone) {
+      window.location.href = `tel:${cleanPhone}`;
+    }
+  };
+
+  const handleSendSMS = () => {
+    const billText = generateBillText();
+    const cleanPhone = (shopInfo.phone || shopInfo.zaloPhone || '').replace(/[^0-9]/g, '');
+    const encoded = encodeURIComponent(billText);
+    window.location.href = `sms:${cleanPhone}?body=${encoded}`;
   };
 
   const handleCopyBill = () => {
@@ -350,6 +409,105 @@ export const CartModal: React.FC<CartModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Zalo 2-Step Guide Dialog Overlay */}
+        {showZaloGuide && (
+          <div className="absolute inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-[#FDFCFB] rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-black/10 space-y-4 animate-in zoom-in-95 duration-150 text-[#1A1A1A]">
+              <div className="flex items-center justify-between pb-3 border-b border-black/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-xs">
+                    <MessageCircle className="w-5 h-5 fill-white text-[#0068FF]" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-[#1A1A1A]">Hướng Dẫn Gửi Đơn Qua Zalo</h3>
+                    <p className="text-[11px] font-sans text-[#1A1A1A]/70">2 thao tác đơn giản để gửi Hóa Đơn</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowZaloGuide(false)}
+                  className="w-8 h-8 rounded-full bg-[#F4F1EA] hover:bg-[#E5E1D8] flex items-center justify-center text-[#1A1A1A] cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Status Alert */}
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs text-emerald-900 font-sans">
+                <Check className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="font-bold">Đã tự động sao chép Hóa đơn vào máy của bạn!</p>
+                  <p className="text-[11px] text-emerald-800">Toàn bộ món ăn, số lượng và tổng tiền đã sẵn sàng trong bộ nhớ tạm.</p>
+                </div>
+              </div>
+
+              {/* Steps Guide */}
+              <div className="space-y-3 font-sans text-xs">
+                <div className="flex items-start gap-3 p-3 bg-[#F4F1EA] rounded-xl border border-black/5">
+                  <span className="w-6 h-6 rounded-full bg-[#0068FF] text-white font-bold text-xs flex items-center justify-center shrink-0">1</span>
+                  <div>
+                    <p className="font-bold text-[#1A1A1A]">Bấm nút "Mở Ứng Dụng Zalo" bên dưới</p>
+                    <p className="text-[11px] text-[#1A1A1A]/70 mt-0.5">Hệ thống sẽ mở ứng dụng Zalo và chuyển thẳng đến cuộc trò chuyện với chủ quán.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-amber-50/70 rounded-xl border border-amber-200/70">
+                  <span className="w-6 h-6 rounded-full bg-[#C05A3D] text-white font-bold text-xs flex items-center justify-center shrink-0">2</span>
+                  <div>
+                    <p className="font-bold text-[#1A1A1A]">Tại khung chat Zalo: DÁN (PASTE) & GỬI</p>
+                    <p className="text-[11px] text-[#1A1A1A]/80 mt-0.5 leading-relaxed">
+                      👉 <strong>Chạm giữ ngón tay vào ô gõ tin nhắn</strong> ➔ Chọn chữ <strong>"Dán" (Paste)</strong> ➔ Bấm nút <strong>Gửi</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={handleOpenZaloNow}
+                  className="w-full py-3 px-4 rounded-xl bg-[#0068FF] hover:bg-[#0052cc] text-white font-sans font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4 fill-white" />
+                  <span>Mở Ứng Dụng Zalo Ngay (Bước 1)</span>
+                  <ExternalLink className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCallShop}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-[#2D463E] hover:bg-[#233731] text-white font-sans font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-[#E5A93B]" />
+                    <span>Gọi Hotline Quán</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSendSMS}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-white hover:bg-gray-100 text-[#1A1A1A] font-sans font-bold text-xs border border-black/15 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    title="Gửi tin nhắn SMS sẽ tự động điền sẵn toàn bộ chữ vào tin nhắn"
+                  >
+                    <Smartphone className="w-3.5 h-3.5 text-[#2D463E]" />
+                    <span>Gửi SMS (Tự điền)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyBill}
+                    className="py-2.5 px-3 rounded-xl bg-white hover:bg-gray-100 text-[#1A1A1A] font-sans font-bold text-xs border border-black/15 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-[#C05A3D]" />
+                    <span>{copied ? 'Đã chép!' : 'Chép lại'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
