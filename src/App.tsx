@@ -121,9 +121,13 @@ export default function App() {
     // Subscribe to Firestore Dishes
     const unsubscribeDishes = subscribeToDishes((remoteDishes) => {
       if (remoteDishes && remoteDishes.length > 0) {
-        setDishes(remoteDishes);
+        // Automatically purge old default Sunday main dishes since shop does not sell main dishes on Sunday
+        const cleaned = remoteDishes.filter(
+          (d) => d.id !== 'main-cn-01' && d.id !== 'main-cn-02'
+        );
+        setDishes(cleaned);
       } else {
-        // If Firestore is empty, seed initial dishes
+        // If Firestore is empty, seed initial dishes (no Sunday main dishes)
         seedInitialDishesToFirestore(INITIAL_DISHES);
       }
     });
@@ -515,12 +519,19 @@ export default function App() {
   };
 
   const handleDeleteDish = async (dishId: string) => {
-    setDishes((prev) => prev.filter((d) => d.id !== dishId));
+    const remainingDishes = dishes.filter((d) => d.id !== dishId);
+    setDishes(remainingDishes);
+
     if (selectedDishForDetail?.id === dishId) {
       setSelectedDishForDetail(null);
     }
-    // Delete from Firestore
-    const res = await deleteDishFromFirestore(dishId);
+
+    try {
+      localStorage.setItem(DISHES_STORAGE_KEY, JSON.stringify(remainingDishes));
+    } catch (e) {}
+
+    // Delete from Firestore & sync settings document so it never reverts
+    const res = await deleteDishFromFirestore(dishId, dishes);
     if (res.isQuotaExceeded) {
       console.warn('Firebase Quota exceeded on delete. Local state updated.');
     }

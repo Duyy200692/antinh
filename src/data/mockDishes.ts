@@ -459,35 +459,6 @@ export const INITIAL_DISHES: DishItem[] = [
     tags: ['Thứ 7', 'Lẩu Thái chay', 'Chua cay'],
     prepTime: '10 - 15 phút',
   },
-
-  // --- CHỦ NHẬT ---
-  {
-    id: 'main-cn-01',
-    name: 'Cơm gà chay xối mỡ nấm đùi gà hoàng kim',
-    description: 'Cơm chiên mỡ hành thơm phức, đùi gà chay làm từ nấm đùi gà áo lớp thính gạo giòn tan bên ngoài, mọng nước bên trong.',
-    price: '45.000đ',
-    unit: 'Phần',
-    category: 'daily_main',
-    availableDays: ['cn'],
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80',
-    isAvailableToday: true,
-    tags: ['Chủ nhật', 'Cơm gà chay', 'Đặc sắc'],
-    prepTime: '10 phút',
-    isFeatured: true,
-  },
-  {
-    id: 'main-cn-02',
-    name: 'Bún chả giò rế chay khoai môn giòn rụm',
-    description: 'Bún tươi rau sống thơm bùi kèm chả giò rế chay cuốn khoai môn đậu xanh chiên giòn rụm, chan mắm chua ngọt đặc biệt.',
-    price: '40.000đ',
-    unit: 'Tô',
-    category: 'daily_main',
-    availableDays: ['cn'],
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
-    isAvailableToday: true,
-    tags: ['Chủ nhật', 'Bún chả giò chay', 'Giòn rụm'],
-    prepTime: '5 - 10 phút',
-  },
 ];
 
 export const SHOP_INFO: ShopInfo = {

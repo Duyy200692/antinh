@@ -110,11 +110,19 @@ export function subscribeToDishes(
 }
 
 // Save or Update a Dish in Firestore
-export async function saveDishToFirestore(dish: DishItem): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
+export async function saveDishToFirestore(dish: DishItem, currentFullList?: DishItem[]): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
   try {
     const cleanDish = sanitizeData(dish);
-    // Single write to primary collection to minimize quota usage
     await setDoc(doc(db, DISHES_COLLECTION, dish.id), cleanDish, { merge: true });
+
+    if (currentFullList) {
+      const exists = currentFullList.some((d) => d.id === dish.id);
+      const updatedList = exists
+        ? currentFullList.map((d) => (d.id === dish.id ? dish : d))
+        : [dish, ...currentFullList];
+      await syncAllDishesToFirestore(updatedList);
+    }
+
     console.log('✅ Đã lưu món vào Firestore:', dish.name, dish.id);
     return { success: true };
   } catch (err: any) {
@@ -125,9 +133,15 @@ export async function saveDishToFirestore(dish: DishItem): Promise<{ success: bo
 }
 
 // Delete a Dish from Firestore
-export async function deleteDishFromFirestore(dishId: string): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
+export async function deleteDishFromFirestore(dishId: string, currentFullList?: DishItem[]): Promise<{ success: boolean; isQuotaExceeded?: boolean }> {
   try {
     await deleteDoc(doc(db, DISHES_COLLECTION, dishId));
+
+    if (currentFullList) {
+      const remaining = currentFullList.filter((d) => d.id !== dishId);
+      await syncAllDishesToFirestore(remaining);
+    }
+
     console.log('✅ Đã xóa món khỏi Firestore:', dishId);
     return { success: true };
   } catch (err: any) {
