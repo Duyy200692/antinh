@@ -16,12 +16,9 @@ import {
   ExternalLink,
   HelpCircle,
   Smartphone,
-  CheckCircle2,
-  Loader2,
 } from 'lucide-react';
 import { CartItem, ShopInfo, Language } from '../types';
 import { SHOP_INFO as DEFAULT_SHOP_INFO } from '../data/mockDishes';
-import { saveOrderToFirestore } from '../firebase';
 
 interface CartModalProps {
   isOpen: boolean;
@@ -32,7 +29,6 @@ interface CartModalProps {
   onRemoveItem: (id: string) => void;
   shopInfo?: ShopInfo;
   language?: Language;
-  onClearCart?: () => void;
 }
 
 export const CartModal: React.FC<CartModalProps> = ({
@@ -44,20 +40,13 @@ export const CartModal: React.FC<CartModalProps> = ({
   onRemoveItem,
   shopInfo = DEFAULT_SHOP_INFO,
   language = 'vi',
-  onClearCart,
 }) => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [generalNote, setGeneralNote] = useState('');
   const [copied, setCopied] = useState(false);
-  const [zaloSentNotice, setZaloSentNotice] = useState(false);
   const [showZaloGuide, setShowZaloGuide] = useState(false);
-
-  // Direct Order Submission State
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
-  const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
-  const [formError, setFormError] = useState('');
 
   if (!isOpen) return null;
 
@@ -157,41 +146,6 @@ export const CartModal: React.FC<CartModalProps> = ({
     const cleanPhone = (shopInfo.phone || shopInfo.zaloPhone || '').replace(/[^0-9]/g, '');
     const encoded = encodeURIComponent(billText);
     window.location.href = `sms:${cleanPhone}?body=${encoded}`;
-  };
-
-  const handleDirectOrderSubmit = async () => {
-    setFormError('');
-    if (!customerPhone.trim() && !customerName.trim()) {
-      setFormError('⚠️ Vui lòng điền Tên hoặc Số điện thoại để quán tiện liên hệ xác nhận!');
-      return;
-    }
-
-    setIsSubmittingOrder(true);
-    try {
-      const res = await saveOrderToFirestore({
-        customerName: customerName.trim() || 'Khách lẻ',
-        customerPhone: customerPhone.trim(),
-        customerAddress: customerAddress.trim(),
-        generalNote: generalNote.trim(),
-        items: cartItems,
-        totalAmount,
-        totalQuantity,
-      });
-
-      if (res.success && res.id) {
-        setSubmittedOrderId(res.id);
-        if (onClearCart) {
-          onClearCart();
-        }
-      } else {
-        setFormError('⚠️ Không thể gửi đơn. Vui lòng thử lại hoặc chọn gửi qua Zalo!');
-      }
-    } catch (err) {
-      console.error(err);
-      setFormError('⚠️ Có lỗi xảy ra. Vui lòng thử lại!');
-    } finally {
-      setIsSubmittingOrder(false);
-    }
   };
 
   const handleCopyBill = () => {
@@ -361,14 +315,6 @@ export const CartModal: React.FC<CartModalProps> = ({
                 />
               </div>
 
-              {/* Form Error Message */}
-              {formError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-sans font-bold flex items-center justify-between gap-2 animate-in fade-in">
-                  <span>{formError}</span>
-                  <button type="button" onClick={() => setFormError('')} className="text-red-500 text-xs">✕</button>
-                </div>
-              )}
-
               {/* Bill Summary Box */}
               <div className="bg-[#F4F1EA] p-4 rounded-xl border border-black/10 space-y-2 text-xs">
                 <div className="flex justify-between font-sans">
@@ -386,97 +332,47 @@ export const CartModal: React.FC<CartModalProps> = ({
           )}
         </div>
 
-        {/* Success View */}
-        {submittedOrderId && (
-          <div className="p-8 text-center space-y-4 font-sans animate-in zoom-in-95 bg-[#FDFCFB]">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
-              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-            </div>
-            <div>
-              <h3 className="font-serif font-bold text-xl text-[#1A1A1A] uppercase tracking-tight">
-                🎉 Đặt Món Thành Công!
-              </h3>
-              <p className="text-xs font-bold text-[#C05A3D] mt-1">
-                Mã Hóa Đơn: #{submittedOrderId}
-              </p>
-            </div>
-            <div className="text-xs text-[#1A1A1A]/80 max-w-md mx-auto leading-relaxed bg-[#F4F1EA] p-4 rounded-xl border border-black/10 space-y-1.5 text-left">
-              <p className="font-bold text-[#1A1A1A]">📋 Đơn hàng đã chuyển trực tiếp về Bếp của quán!</p>
-              <p>• Khách hàng: <strong>{customerName || 'Khách lẻ'}</strong> - {customerPhone}</p>
-              {customerAddress && <p>• Địa chỉ: {customerAddress}</p>}
-              <p>• Tổng món: <strong>{totalQuantity} phần</strong> ({totalAmount > 0 ? `${totalAmount.toLocaleString('vi-VN')}đ` : 'Liên hệ xác nhận'})</p>
-              <p className="text-[11px] text-emerald-800 pt-1 border-t border-black/10 font-medium">
-                👉 Bếp quán sẽ gọi điện thoại hoặc nhắn tin xác nhận trong ít phút.
-              </p>
-            </div>
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+        {/* Footer Actions */}
+        <div className="p-4 bg-[#F4F1EA] border-t border-black/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-white hover:bg-gray-100 text-[#1A1A1A] text-xs font-sans font-bold uppercase tracking-wider border border-black/15 transition-colors cursor-pointer"
+          >
+            Tiếp Tục Chọn Món
+          </button>
+
+          {cartItems.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setSubmittedOrderId(null);
-                  onClose();
-                }}
-                className="px-6 py-2.5 bg-[#2D463E] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm hover:bg-[#233731] cursor-pointer"
+                onClick={handleCopyBill}
+                className="px-3.5 py-2 rounded-lg bg-white hover:bg-gray-100 text-[#1A1A1A] text-xs font-sans font-bold uppercase tracking-wider border border-black/15 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                Hoàn Tất & Đóng
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span>Đã sao chép Bill!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-[#C05A3D]" />
+                    <span>Sao chép Bill</span>
+                  </>
+                )}
               </button>
+
               <button
                 type="button"
                 onClick={handleSendZalo}
-                className="px-5 py-2.5 bg-[#0068FF] text-white font-bold text-xs uppercase tracking-wider rounded-lg flex items-center gap-2 shadow-sm hover:bg-[#0052cc] cursor-pointer"
+                className="px-5 py-2 rounded-lg bg-[#0068FF] hover:bg-[#0052cc] text-white text-xs font-sans font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition-colors cursor-pointer"
+                title="Gửi chi tiết Bill qua Zalo chủ quán"
               >
                 <MessageCircle className="w-4 h-4 fill-white" />
-                <span>Gửi Thêm Qua Zalo</span>
+                <span>Gửi Bill Qua Zalo Chủ Quán</span>
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Footer Actions */}
-        {!submittedOrderId && (
-          <div className="p-4 bg-[#F4F1EA] border-t border-black/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-white hover:bg-gray-100 text-[#1A1A1A] text-xs font-sans font-bold uppercase tracking-wider border border-black/15 transition-colors cursor-pointer"
-            >
-              Tiếp Tục Chọn Món
-            </button>
-
-            {cartItems.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleDirectOrderSubmit}
-                  disabled={isSubmittingOrder}
-                  className="px-4 py-2 rounded-lg bg-[#2D463E] hover:bg-[#233731] text-white text-xs font-sans font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition-colors cursor-pointer disabled:opacity-50"
-                  title="Đơn hàng gửi thẳng về Bếp Quán - Không cần qua Zalo"
-                >
-                  {isSubmittingOrder ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Đang Đặt Đơn...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-[#E5A93B]" />
-                      <span>Xác Nhận Đặt Đơn Trực Tiếp</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSendZalo}
-                  className="px-4 py-2 rounded-lg bg-[#0068FF] hover:bg-[#0052cc] text-white text-xs font-sans font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition-colors cursor-pointer"
-                  title="Gửi chi tiết Bill qua Zalo chủ quán"
-                >
-                  <MessageCircle className="w-4 h-4 fill-white text-[#0068FF]" />
-                  <span>Gửi Qua Zalo</span>
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Zalo 2-Step Guide Dialog Overlay */}
         {showZaloGuide && (
