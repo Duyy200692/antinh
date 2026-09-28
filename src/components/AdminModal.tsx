@@ -86,6 +86,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [formName, setFormName] = useState(shopInfo.name);
   const [formAddress, setFormAddress] = useState(shopInfo.address);
   const [formPhone, setFormPhone] = useState(shopInfo.phone);
+  const [formZaloPhone, setFormZaloPhone] = useState(shopInfo.zaloPhone || shopInfo.phone);
   const [formContactPerson, setFormContactPerson] = useState(shopInfo.contactPerson);
   const [formOpenHours, setFormOpenHours] = useState(shopInfo.openHours);
   const [formSlogan, setFormSlogan] = useState(shopInfo.slogan);
@@ -100,6 +101,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     setFormName(shopInfo.name);
     setFormAddress(shopInfo.address);
     setFormPhone(shopInfo.phone);
+    setFormZaloPhone(shopInfo.zaloPhone || shopInfo.phone);
     setFormContactPerson(shopInfo.contactPerson);
     setFormOpenHours(shopInfo.openHours);
     setFormSlogan(shopInfo.slogan);
@@ -160,6 +162,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       name: formName,
       address: formAddress,
       phone: formPhone,
+      zaloPhone: formZaloPhone.trim() || formPhone,
       contactPerson: formContactPerson,
       openHours: formOpenHours,
       slogan: formSlogan,
@@ -666,7 +669,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
               <div>
                 <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-                  Số Điện Thoại / Zalo Đặt Món
+                  Số Hotline Gọi Trực Tiếp
                 </label>
                 <input
                   type="text"
@@ -675,6 +678,32 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   placeholder="VD: 0909 310 567"
                   className="w-full px-4 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-sans"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#2D463E] mb-1 flex items-center justify-between">
+                  <span>Số Điện Thoại Zalo Nhận Đơn (Bill) *</span>
+                  {formZaloPhone && (
+                    <a
+                      href={`https://zalo.me/${formZaloPhone.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-[#0068FF] hover:underline normal-case font-bold flex items-center gap-1"
+                    >
+                      Kiểm tra mở thử Zalo ↗
+                    </a>
+                  )}
+                </label>
+                <input
+                  type="text"
+                  value={formZaloPhone}
+                  onChange={(e) => setFormZaloPhone(e.target.value)}
+                  placeholder="VD: 0909 310 567"
+                  className="w-full px-4 py-2.5 rounded-sm bg-white border border-[#2D463E]/30 text-[#1A1A1A] text-sm focus:outline-none focus:ring-2 focus:ring-[#0068FF] font-sans font-bold"
+                />
+                <p className="text-[11px] text-[#1A1A1A]/70 font-sans mt-1">
+                  💡 <strong>Cơ chế tự động:</strong> Khách chọn món và bấm "Gửi Bill qua Zalo", hệ thống sẽ tự động mở ứng dụng Zalo trên máy khách và chuyển thẳng toàn bộ hóa đơn vào số Zalo này. <em>Chủ quán không cần phải đăng nhập tài khoản Zalo vào trang web</em> (đảm bảo bảo mật tối đa).
+                </p>
               </div>
 
               <div>

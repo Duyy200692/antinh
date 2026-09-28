@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DishItem, Language } from '../types';
 import { getCategoryLabel, getDayLabel } from '../utils/dayUtils';
 import { getLocalizedDish, TRANSLATIONS } from '../utils/i18n';
-import { X, CheckCircle2, XCircle, Clock, Edit3, PhoneCall, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Clock, Edit3, PhoneCall, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { SHOP_INFO } from '../data/mockDishes';
 
 interface DishDetailModalProps {
@@ -10,6 +10,7 @@ interface DishDetailModalProps {
   onClose: () => void;
   onToggleStock: (dishId: string) => void;
   onEditDish: (dish: DishItem) => void;
+  onAddToCart: (dish: DishItem, quantity: number, note?: string) => void;
   isAdmin?: boolean;
   onRequireAdminLogin?: () => void;
   language?: Language;
@@ -20,15 +21,29 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   onClose,
   onToggleStock,
   onEditDish,
+  onAddToCart,
   isAdmin = false,
   onRequireAdminLogin,
   language = 'vi' as Language,
 }) => {
+  const [quantity, setQuantity] = useState(1);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    setQuantity(1);
+    setNote('');
+  }, [dish]);
+
   if (!dish) return null;
 
   const t = TRANSLATIONS[language];
   const localizedDish = getLocalizedDish(dish, language);
   const isAllWeek = dish.availableDays.includes('all');
+
+  const handleAdd = () => {
+    onAddToCart(dish, quantity, note.trim() || undefined);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in zoom-in-95 duration-200">
@@ -138,6 +153,56 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               </a>
             </div>
           )}
+
+          {/* Order Quantity & Note Section */}
+          <div className="p-4 rounded-xl bg-[#F4F1EA] border border-black/15 space-y-4">
+            <h4 className="text-xs font-sans font-bold uppercase tracking-wider text-[#2D463E] flex items-center gap-1.5">
+              <ShoppingBag className="w-4 h-4 text-[#C05A3D]" />
+              <span>Chọn số lượng phần & Ghi chú cho chủ tiệm</span>
+            </h4>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-sans font-bold text-[#1A1A1A]">Số lượng:</span>
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-black/15 shadow-xs">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                    className="w-7 h-7 rounded bg-[#F4F1EA] hover:bg-gray-200 disabled:opacity-40 text-black flex items-center justify-center text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="w-8 text-center font-serif font-bold text-sm text-[#1A1A1A]">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-7 h-7 rounded bg-[#C05A3D] text-white hover:bg-[#a0452c] flex items-center justify-center text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-xs font-sans text-[#1A1A1A]/70 font-medium">({localizedDish.unit})</span>
+              </div>
+
+              <button
+                onClick={handleAdd}
+                disabled={!dish.isAvailableToday}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#C05A3D] hover:bg-[#a0452c] disabled:opacity-50 text-white text-xs font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:scale-102"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Thêm vào Giỏ Hàng</span>
+              </button>
+            </div>
+
+            <div>
+              <input
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Ghi chú cho món này (vd: ít ngọt, không hành, cay ít...)"
+                className="w-full px-3 py-2 rounded-lg bg-white border border-black/15 text-xs text-[#1A1A1A] focus:ring-1 focus:ring-[#C05A3D]"
+              />
+            </div>
+          </div>
 
           {/* Ordering Callout */}
           <div className="p-4 rounded-sm bg-[#F4F1EA] border border-black/10 flex items-center justify-between gap-3">

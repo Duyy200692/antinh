@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DishItem, DayOfWeek, DishCategory, ShopInfo, Language, StickyRiceCategoryInfo } from './types';
+import { DishItem, DayOfWeek, DishCategory, ShopInfo, Language, StickyRiceCategoryInfo, CartItem } from './types';
 import { INITIAL_DISHES, SHOP_INFO as DEFAULT_SHOP_INFO, DEFAULT_STICKY_RICE_CATEGORY_INFO } from './data/mockDishes';
 import {
   filterDishes,
@@ -21,6 +21,8 @@ import { AdminModal } from './components/AdminModal';
 import { AdminAuthModal } from './components/AdminAuthModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { StickyRiceOrderModal } from './components/StickyRiceOrderModal';
+import { CartModal } from './components/CartModal';
+import { FloatingCartButton } from './components/FloatingCartButton';
 import {
   subscribeToDishes,
   saveDishToFirestore,
@@ -228,21 +230,89 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isStickyRiceModalOpen, setIsStickyRiceModalOpen] = useState<boolean>(false);
 
-  // Lock body scroll when any modal is open on mobile
+  // Cart & Bill Modal State
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('tam_chay_cart_items_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+  const [isCartModalOpen, setIsCartModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tam_chay_cart_items_v1', JSON.stringify(cartItems));
+    } catch (e) {}
+  }, [cartItems]);
+
+  const handleAddToCart = (dish: DishItem, quantity: number, note?: string) => {
+    setCartItems((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.dishId === dish.id && (item.note || '') === (note || '')
+      );
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + quantity,
+        };
+        return updated;
+      } else {
+        const newItem: CartItem = {
+          id: `${dish.id}_${Date.now()}`,
+          dishId: dish.id,
+          name: dish.name,
+          price: dish.price,
+          unit: dish.unit,
+          quantity,
+          note,
+          image: dish.image,
+        };
+        return [newItem, ...prev];
+      }
+    });
+    setIsCartModalOpen(true);
+  };
+
+  const handleUpdateCartQuantity = (id: string, delta: number) => {
+    setCartItems((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const nextQty = item.quantity + delta;
+            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  };
+
+  const handleUpdateCartNote = (id: string, note: string) => {
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, note } : item))
+    );
+  };
+
+  const handleRemoveCartItem = (id: string) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Lock body scroll cleanly when any modal is open
   useEffect(() => {
     const isAnyModalOpen =
-      !!selectedDishForDetail ||
+      Boolean(selectedDishForDetail) ||
       isAddModalOpen ||
       isShopInfoModalOpen ||
       isWeeklyOverviewModalOpen ||
       isAdminModalOpen ||
       isAuthModalOpen ||
-      isStickyRiceModalOpen;
+      isStickyRiceModalOpen ||
+      isCartModalOpen;
 
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
     } else {
       document.body.style.overflow = '';
       document.body.style.position = '';
@@ -262,6 +332,7 @@ export default function App() {
     isAdminModalOpen,
     isAuthModalOpen,
     isStickyRiceModalOpen,
+    isCartModalOpen,
   ]);
 
   // Day selection change handler
@@ -852,6 +923,7 @@ export default function App() {
           setEditingDish(dish);
           setIsAddModalOpen(true);
         }}
+        onAddToCart={handleAddToCart}
         isAdmin={isAdminLoggedIn}
         onRequireAdminLogin={() => setIsAuthModalOpen(true)}
         language={language}
@@ -928,6 +1000,24 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onSuccessLogin={handleSuccessLogin}
         currentPin={adminPin}
+        language={language}
+      />
+
+      {/* Floating Cart Button */}
+      <FloatingCartButton
+        cartItems={cartItems}
+        onOpenCart={() => setIsCartModalOpen(true)}
+      />
+
+      {/* Cart & Professional Bill Modal */}
+      <CartModal
+        isOpen={isCartModalOpen}
+        onClose={() => setIsCartModalOpen(false)}
+        cartItems={cartItems}
+        onUpdateQuantity={handleUpdateCartQuantity}
+        onUpdateNote={handleUpdateCartNote}
+        onRemoveItem={handleRemoveCartItem}
+        shopInfo={shopInfo}
         language={language}
       />
     </div>

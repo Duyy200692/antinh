@@ -35,6 +35,7 @@ export interface ShopInfo {
   name: string;
   address: string;
   phone: string;
+  zaloPhone?: string; // Dedicated Zalo phone number for receiving orders & bills
   contactPerson: string;
   openHours: string;
   slogan: string;
@@ -55,6 +56,17 @@ export interface CategoryConfig {
   label: string;
   iconName: string;
   colorClass: string;
+}
+
+export interface CartItem {
+  id: string; // unique cart item id (e.g. dishId + unique timestamp)
+  dishId: string;
+  name: string;
+  price: string;
+  unit: string;
+  quantity: number;
+  note?: string;
+  image: string;
 }
 
 export interface StickyRiceCategoryInfo {
