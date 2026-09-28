@@ -1019,6 +1019,7 @@ export default function App() {
         onRemoveItem={handleRemoveCartItem}
         shopInfo={shopInfo}
         language={language}
+        onClearCart={() => setCartItems([])}
       />
     </div>
   );

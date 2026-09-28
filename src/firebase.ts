@@ -10,7 +10,7 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { DishItem, ShopInfo, StickyRiceCategoryInfo } from './types';
+import { DishItem, ShopInfo, StickyRiceCategoryInfo, CartItem } from './types';
 
 // Initialize Firebase App if not initialized
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -320,6 +320,90 @@ export async function saveStickyRiceCategoryToFirestore(
     console.warn('⚠️ Lỗi khi lưu thông tin danh mục đặt xôi vào Firestore:', err);
     const isQuota = err?.code === 'resource-exhausted' || err?.message?.includes('Quota limit exceeded');
     return { success: false, isQuotaExceeded: isQuota };
+  }
+}
+
+// -------------------------------------------------------------
+// Orders Management (Realtime Firestore)
+// -------------------------------------------------------------
+const ORDERS_COLLECTION = 'tam_chay_orders';
+
+export interface OrderRecord {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  generalNote: string;
+  items: CartItem[];
+  totalAmount: number;
+  totalQuantity: number;
+  createdAt: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+}
+
+export async function saveOrderToFirestore(
+  orderData: Omit<OrderRecord, 'id' | 'createdAt' | 'status'>
+): Promise<{ success: boolean; id?: string }> {
+  try {
+    const orderId = 'ORD-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
+    const docRef = doc(db, ORDERS_COLLECTION, orderId);
+    const newOrder: OrderRecord = {
+      ...orderData,
+      id: orderId,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+    };
+    await setDoc(docRef, sanitizeData(newOrder));
+    console.log('✅ Đã lưu đơn hàng vào Firestore:', orderId);
+    return { success: true, id: orderId };
+  } catch (err) {
+    console.warn('Lỗi khi lưu đơn hàng:', err);
+    return { success: false };
+  }
+}
+
+export function subscribeToOrders(
+  onSuccess: (orders: OrderRecord[]) => void
+): () => void {
+  const colRef = collection(db, ORDERS_COLLECTION);
+  return onSnapshot(
+    colRef,
+    (snapshot) => {
+      const ordersList: OrderRecord[] = [];
+      snapshot.forEach((docSnap) => {
+        ordersList.push(docSnap.data() as OrderRecord);
+      });
+      ordersList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      onSuccess(ordersList);
+    },
+    (err) => {
+      console.warn('Lỗi lắng nghe danh sách đơn hàng:', err);
+    }
+  );
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderRecord['status']
+): Promise<boolean> {
+  try {
+    const docRef = doc(db, ORDERS_COLLECTION, orderId);
+    await setDoc(docRef, { status, updatedAt: new Date().toISOString() }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Lỗi cập nhật trạng thái đơn:', err);
+    return false;
+  }
+}
+
+export async function deleteOrderFromFirestore(orderId: string): Promise<boolean> {
+  try {
+    const docRef = doc(db, ORDERS_COLLECTION, orderId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (err) {
+    console.warn('Lỗi xóa đơn hàng:', err);
+    return false;
   }
 }
 

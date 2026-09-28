@@ -17,6 +17,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Collection đơn hàng Tâm Chay
+    match /tam_chay_orders/{orderId} {
+      allow read, write: if true;
+    }
+
     // Collection cài đặt hệ thống
     match /settings/{docId} {
       allow read, write: if true;
