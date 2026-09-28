@@ -29,6 +29,7 @@ export const CartModal: React.FC<CartModalProps> = ({
   const [customerAddress, setCustomerAddress] = useState('');
   const [generalNote, setGeneralNote] = useState('');
   const [copied, setCopied] = useState(false);
+  const [zaloSentNotice, setZaloSentNotice] = useState(false);
 
   if (!isOpen) return null;
 
@@ -81,8 +82,6 @@ export const CartModal: React.FC<CartModalProps> = ({
     text += ` 🙏 Cảm ơn quý khách đã đặt món tại ${shopInfo.name}!`;
     return text;
   };
-
-  const [zaloSentNotice, setZaloSentNotice] = useState(false);
 
   const handleSendZalo = () => {
     const billText = generateBillText();
