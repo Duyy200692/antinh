@@ -194,21 +194,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-xs font-sans text-[#1A1A1A]/60">
-              <span className="italic">{t.guestViewBadge}</span>
-              {onRequireAdminLogin && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onRequireAdminLogin();
-                  }}
-                  className="px-3 py-1.5 rounded-sm bg-[#1A1A1A] text-white font-sans text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 hover:bg-[#2D463E] transition-colors cursor-pointer"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#C05A3D]" />
-                  <span>{t.loginAdmin}</span>
-                </button>
-              )}
-            </div>
+            <span />
           )}
 
           <button
