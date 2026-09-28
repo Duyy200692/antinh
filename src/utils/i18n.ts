@@ -643,21 +643,128 @@ export const DISH_TRANSLATIONS_EN: Record<string, DishTranslation> = {
   },
 };
 
+// Instant Smart Rules Dictionary Fallback for Vietnamese culinary names
+export function autoTranslateNameFallback(name: string): string {
+  if (!name) return name;
+  const lower = name.toLowerCase().trim();
+
+  // Common Vietnamese noodle & soup dishes
+  if (lower.includes('bún thái')) return 'Vegan Spicy Thai Noodle Soup';
+  if (lower.includes('bún bò')) return 'Vegan Hue Spicy Noodle Soup (Bun Bo)';
+  if (lower.includes('bún riêu')) return 'Vegan Crab Paste Noodle Soup (Bun Rieu)';
+  if (lower.includes('bún mắm')) return 'Vegan Fermented Herbal Noodle Soup';
+  if (lower.includes('bún chả giò')) return 'Spring Roll Rice Noodle Bowl';
+  if (lower.includes('bún thịt nướng')) return 'Vegan Grilled Meat Rice Noodle Bowl';
+  if (lower.includes('bún măng')) return 'Herbal Bamboo Shoot Noodle Soup';
+  if (lower.includes('bún mộc')) return 'Vegan Meatball Noodle Soup';
+  if (lower.startsWith('bún')) return name.replace(/^bún/gi, 'Vegan Rice Noodles');
+
+  if (lower.includes('phở')) return 'Vegan Vietnamese Pho Noodle Soup';
+  if (lower.includes('hủ tiếu')) return 'Vegan Phnom Penh Noodle Soup';
+  if (lower.includes('mì quảng')) return 'Quang Style Turmeric Noodle Bowl';
+  if (lower.includes('bánh canh')) return 'Thick Tapioca Noodle Soup';
+  if (lower.includes('cà ri')) return 'Creamy Coconut Curry Bowl';
+
+  // Rice dishes
+  if (lower.includes('cơm tấm')) return 'Vegan Broken Rice with Sides';
+  if (lower.includes('cơm chiên')) return 'Golden Herb Fried Rice';
+  if (lower.includes('cơm kho quẹt')) return 'Claypot Rice with Caramelized Dip';
+  if (lower.startsWith('cơm')) return name.replace(/^cơm/gi, 'Rice Dish');
+
+  // Bread & Sticky rice
+  if (lower.includes('bánh mì')) return 'Crispy Vietnamese Banh Mi Baguette';
+  if (lower.includes('xôi gấc')) return 'Red Gac Fruit Sticky Rice';
+  if (lower.includes('xôi ngô') || lower.includes('xôi bắp')) return 'Golden Corn Sticky Rice';
+  if (lower.includes('xôi vò')) return 'Crumbed Mung Bean Sticky Rice';
+  if (lower.includes('xôi khúc')) return 'Herbal Khuc Rice Cake';
+  if (lower.startsWith('xôi')) return name.replace(/^xôi/gi, 'Sticky Rice');
+
+  // Ready made specialties
+  if (lower.includes('chà bông')) return 'Vegan Shredded Mushroom / Barley Floss';
+  if (lower.includes('sườn non')) return 'Glazed Barley Vegan Ribs';
+  if (lower.includes('khổ qua')) return 'Caramelized Bitter Melon';
+  if (lower.includes('nấm')) return 'Handcrafted King Oyster Mushroom Specialty';
+
+  return name;
+}
+
+export function autoTranslateDescFallback(desc: string): string {
+  if (!desc) return desc;
+  const lower = desc.toLowerCase();
+
+  if (lower.includes('bún tươi') || lower.includes('đậu hũ') || lower.includes('chả chay')) {
+    return 'Fresh rice noodles, soft tofu, wild mushrooms, crispy vegan ham, and aromatic herbs in hot broth.';
+  }
+  if (lower.includes('100%')) {
+    return 'Artisanal plant-based dish made with 100% fresh natural ingredients and wholesome spices.';
+  }
+  return desc;
+}
+
+export function autoTranslateUnitFallback(unit: string): string {
+  if (!unit) return 'Portion';
+  const lower = unit.toLowerCase();
+  if (lower.includes('phần')) return 'Portion';
+  if (lower.includes('hũ')) return unit.replace(/hũ/gi, 'Jar');
+  if (lower.includes('ổ')) return 'Loaf';
+  if (lower.includes('tô') || lower.includes('bát')) return 'Bowl';
+  if (lower.includes('hộp')) return 'Box';
+  if (lower.includes('mâm')) return unit.replace(/mâm/gi, 'Set');
+  return unit;
+}
+
+export function autoTranslatePrepTimeFallback(prep: string): string {
+  if (!prep) return '5 - 10 mins';
+  return prep
+    .replace(/có sẵn liền/gi, 'Instant ready')
+    .replace(/có sẵn/gi, 'Instant ready')
+    .replace(/phút/gi, 'mins')
+    .replace(/đặt trước/gi, 'Pre-order');
+}
+
 // Helper to get localized dish info
 export function getLocalizedDish(dish: DishItem, lang: Language): DishItem {
   if (lang === 'vi') return dish;
 
   const translation = DISH_TRANSLATIONS_EN[dish.id];
-  if (!translation) return dish;
 
   return {
     ...dish,
-    name: translation.name || dish.name,
-    description: translation.description || dish.description,
-    unit: translation.unit || dish.unit,
-    prepTime: translation.prepTime || dish.prepTime,
-    tags: translation.tags || dish.tags,
+    name: dish.nameEn || translation?.name || autoTranslateNameFallback(dish.name),
+    description: dish.descriptionEn || translation?.description || autoTranslateDescFallback(dish.description),
+    unit: dish.unitEn || translation?.unit || autoTranslateUnitFallback(dish.unit),
+    prepTime: dish.prepTimeEn || translation?.prepTime || autoTranslatePrepTimeFallback(dish.prepTime),
+    tags: translation?.tags || dish.tags,
   };
+}
+
+// Call AI Translation endpoint on server
+export async function translateDishWithAI(dish: {
+  name: string;
+  description?: string;
+  unit?: string;
+  prepTime?: string;
+}): Promise<{ nameEn: string; descriptionEn: string; unitEn?: string; prepTimeEn?: string } | null> {
+  try {
+    const response = await fetch('/api/translate-dish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dish),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned status ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data.nameEn) {
+      return data;
+    }
+    return null;
+  } catch (err) {
+    console.warn('AI translation service error:', err);
+    return null;
+  }
 }
 
 // Helper to get localized shop info

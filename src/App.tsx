@@ -8,7 +8,7 @@ import {
   getDayLabel,
   getTodayDayOfWeek,
 } from './utils/dayUtils';
-import { TRANSLATIONS, LANGUAGE_STORAGE_KEY, getLocalizedShopInfo } from './utils/i18n';
+import { TRANSLATIONS, LANGUAGE_STORAGE_KEY, getLocalizedShopInfo, translateDishWithAI } from './utils/i18n';
 import { Header } from './components/Header';
 import { DaySelector } from './components/DaySelector';
 import { CategoryFilter } from './components/CategoryFilter';
@@ -213,6 +213,49 @@ export default function App() {
       console.error('Failed to save admin auth state', e);
     }
   }, [isAdminLoggedIn]);
+
+  // Auto-translate custom user dishes when switching to English mode
+  useEffect(() => {
+    if (language !== 'en') return;
+
+    const dishesToTranslate = dishes.filter((d) => !d.nameEn);
+    if (dishesToTranslate.length === 0) return;
+
+    let isMounted = true;
+    (async () => {
+      for (const dish of dishesToTranslate) {
+        if (!isMounted) break;
+        const translated = await translateDishWithAI({
+          name: dish.name,
+          description: dish.description,
+          unit: dish.unit,
+          prepTime: dish.prepTime,
+        });
+
+        if (translated && isMounted) {
+          setDishes((prev) =>
+            prev.map((item) => {
+              if (item.id === dish.id) {
+                const updatedDish = {
+                  ...item,
+                  nameEn: translated.nameEn,
+                  descriptionEn: translated.descriptionEn || item.descriptionEn,
+                };
+                // Automatically persist the translated dish to Firestore/Storage
+                saveDishToFirestore(updatedDish);
+                return updatedDish;
+              }
+              return item;
+            })
+          );
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language, dishes]);
 
   // Filter States
   const [selectedDay, setSelectedDay] = useState<DayOfWeek | 'today'>('today');

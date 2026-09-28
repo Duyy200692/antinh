@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DishItem, DayOfWeek, DishCategory } from '../types';
 import { DAYS_OF_WEEK, CATEGORIES } from '../data/mockDishes';
-import { X, Save, Plus, Trash2, Check, Sparkles, Upload, Loader2, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Save, Plus, Trash2, Check, Sparkles, Upload, Loader2, Image as ImageIcon, CheckCircle2, AlertCircle, Languages } from 'lucide-react';
 import { compressImageToWebp, uploadWebpImageToFirebase, getLocalImagePreviewUrl } from '../utils/imageUtils';
+import { translateDishWithAI } from '../utils/i18n';
 
 interface AddEditDishModalProps {
   isOpen: boolean;
@@ -33,6 +34,36 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
   const [tagsInput, setTagsInput] = useState('');
   const [prepTime, setPrepTime] = useState('5 - 10 phút');
   const [isAvailableToday, setIsAvailableToday] = useState(true);
+
+  // Translation State
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationSuccess, setTranslationSuccess] = useState(false);
+
+  const handleAutoTranslate = async () => {
+    if (!name.trim()) return;
+    setIsTranslating(true);
+    setTranslationSuccess(false);
+
+    try {
+      const res = await translateDishWithAI({
+        name: name.trim(),
+        description: description.trim(),
+        unit: unit.trim(),
+        prepTime: prepTime.trim(),
+      });
+
+      if (res) {
+        if (res.nameEn) setNameEn(res.nameEn);
+        if (res.descriptionEn) setDescriptionEn(res.descriptionEn);
+        setTranslationSuccess(true);
+        setTimeout(() => setTranslationSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Lỗi khi dịch tự động:', err);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   // WebP Image upload state
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -171,9 +202,33 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
     setAvailableDays(updated);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    let finalNameEn = nameEn.trim();
+    let finalDescEn = descriptionEn.trim();
+
+    // Nếu chưa có Tiếng Anh, tự động dịch bằng AI trước khi lưu
+    if (!finalNameEn) {
+      setIsTranslating(true);
+      try {
+        const translated = await translateDishWithAI({
+          name: name.trim(),
+          description: description.trim(),
+          unit: unit.trim(),
+          prepTime: prepTime.trim(),
+        });
+        if (translated) {
+          finalNameEn = translated.nameEn;
+          if (!finalDescEn) finalDescEn = translated.descriptionEn;
+        }
+      } catch (err) {
+        console.warn('Auto translate on submit warning:', err);
+      } finally {
+        setIsTranslating(false);
+      }
+    }
 
     const tags = tagsInput
       .split(',')
@@ -183,9 +238,9 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
     const dishItem: DishItem = {
       id: initialDish ? initialDish.id : `dish-${Date.now()}`,
       name: name.trim(),
-      nameEn: nameEn.trim() || undefined,
+      nameEn: finalNameEn || undefined,
       description: description.trim(),
-      descriptionEn: descriptionEn.trim() || undefined,
+      descriptionEn: finalDescEn || undefined,
       price: price.trim(),
       unit: unit.trim(),
       category,
@@ -223,19 +278,63 @@ export const AddEditDishModal: React.FC<AddEditDishModalProps> = ({
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
-          {/* Tên món */}
-          <div>
-            <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/70 mb-1">
-              Tên món ăn chay *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="VD: Cơm tấm chay sườn lúa mạch / Xôi gấc..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-sm bg-[#F4F1EA] border border-black/10 text-[#1A1A1A] text-sm focus:outline-none focus:ring-1 focus:ring-[#C05A3D] font-serif font-bold"
-            />
+          {/* Tên món & Dịch Tiếng Anh */}
+          <div className="space-y-3 p-4 bg-[#F4F1EA]/70 rounded-sm border border-black/10">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="block text-xs font-sans font-bold uppercase tracking-wider text-[#1A1A1A]">
+                Tên món ăn chay & Tiếng Anh
+              </label>
+              <button
+                type="button"
+                onClick={handleAutoTranslate}
+                disabled={isTranslating || !name.trim()}
+                className="px-3 py-1 rounded-full bg-[#2D463E] hover:bg-[#233731] text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+              >
+                {isTranslating ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang dịch...</span>
+                  </>
+                ) : (
+                  <>
+                    <Languages className="w-3.5 h-3.5 text-[#E5A93B]" />
+                    <span>✨ Tự Động Dịch Tiếng Anh bằng AI</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {translationSuccess && (
+              <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 p-2 rounded-sm border border-emerald-200 flex items-center gap-1.5 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Đã dịch tên & mô tả Tiếng Anh chuẩn vị món chay nhà hàng!</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <span className="text-[11px] font-bold text-[#1A1A1A]/70 block mb-1">Tên Tiếng Việt *</span>
+                <input
+                  type="text"
+                  required
+                  placeholder="VD: Cơm tấm chay sườn lúa mạch / Bún Thái chay..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-sm bg-white border border-black/15 text-[#1A1A1A] text-sm focus:ring-1 focus:ring-[#C05A3D] font-serif font-bold"
+                />
+              </div>
+
+              <div>
+                <span className="text-[11px] font-bold text-[#2D463E] block mb-1">Tên Tiếng Anh (English Name)</span>
+                <input
+                  type="text"
+                  placeholder="VD: Vegan Broken Rice / Vegan Spicy Thai Noodles..."
+                  value={nameEn}
+                  onChange={(e) => setNameEn(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-sm bg-white border border-black/15 text-[#1A1A1A] text-sm focus:ring-1 focus:ring-[#C05A3D] font-sans"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Danh mục & Đơn vị / Giá */}
